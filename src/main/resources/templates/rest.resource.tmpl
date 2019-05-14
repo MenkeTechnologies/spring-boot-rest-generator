@@ -15,39 +15,39 @@ import {{mainPackageName}}.dao.{{entityName}}Dao;
 @RequestMapping("{{restServicePrefix}}/{{serviceName}}")
 public class {{entityName}}Resource {
 
-	@Autowired
-	{{entityName}}Dao dao;
+    @Autowired
+    {{entityName}}Dao dao;
 
-	@GetMapping
-	public List<{{entityName}}> readAll(){
-		return dao.findAll();
-	}
-	
-	@GetMapping("/{id}")
-	public {{entityName}} read(@PathVariable("id") Long id){
-		return dao.findOne(id);
-	}
-	
-	@PostMapping
-	public {{entityName}} create(@RequestBody {{entityName}} entity){
-		return dao.save(entity);
-	}
-	
-	@PutMapping
-	public {{entityName}} update(@RequestBody {{entityName}} entity){
-		return dao.save(entity);
-	}
-	
-	@DeleteMapping("/{id}")
-	public boolean delete(@PathVariable("id") Long id){
-		dao.delete(id);
-		return true;
-	}
-	
-	@DeleteMapping
-	public boolean deleteAll(@RequestBody List<{{entityName}}> entityList){
-		dao.deleteAll(entityList);
-		return true;
-	}
+    @GetMapping
+    public List<{{entityName}}> readAll(){
+        return dao.findAll();
+    }
+
+    @GetMapping("/{id}")
+    public {{entityName}} read(@PathVariable("id") Long id){
+        return dao.findOne(id);
+    }
+
+    @PostMapping
+    public {{entityName}} create(@RequestBody {{entityName}} entity){
+        return dao.save(entity);
+    }
+
+    @PutMapping
+    public {{entityName}} update(@RequestBody {{entityName}} entity){
+        return dao.save(entity);
+    }
+
+    @DeleteMapping("/{id}")
+    public boolean delete(@PathVariable("id") Long id){
+        dao.delete(id);
+        return true;
+    }
+
+    @DeleteMapping
+    public boolean deleteAll(@RequestBody List<{{entityName}}> entityList){
+        dao.deleteAll(entityList);
+        return true;
+    }
 
 }
