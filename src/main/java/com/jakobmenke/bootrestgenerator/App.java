@@ -26,7 +26,7 @@ public class App {
             createFile("dao", entityName.getEntityName() + "Dao.java", daoTemplate);
 
             String repositoryTemplate = templates.getRepositoryTemplate(PACKAGE, entityName.getEntityName());
-            createFile("repositories", entityName.getEntityName() + "Repository.java", repositoryTemplate);
+            createFile("repository", entityName.getEntityName() + "Repository.java", repositoryTemplate);
         }
     }
 
