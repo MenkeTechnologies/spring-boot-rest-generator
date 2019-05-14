@@ -23,7 +23,7 @@ public class {{entityName}}Dao {
     }
 
     public {{entityName}} findOne(Long id) {
-        return repository.findOne(id);
+        return repository.findById(id).orElse(null);
     }
 
     public {{entityName}} save({{entityName}} entity) {
@@ -31,7 +31,7 @@ public class {{entityName}}Dao {
     }
 
     public void delete(Long id) {
-        repository.delete(id);
+        repository.deleteById(id);
     }
 
     public void delete({{entityName}} entity) {
@@ -39,7 +39,7 @@ public class {{entityName}}Dao {
     }
 
     public void deleteAll(List<{{entityName}}> entityList) {
-        repository.delete(entityList);
+        repository.deleteAll();
     }
 
 }
