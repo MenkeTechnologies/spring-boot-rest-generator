@@ -1,0 +1,11 @@
+package {{mainPackageName}}.repositories; 
+
+import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+
+import {{mainPackageName}}.entity.{{entityName}};
+
+@RepositoryRestResource(collectionResourceRel = "{{entityName}}", path = "{{entityName}}")
+public interface {{entityName}}Repository extends JpaRepository<{{entityName}}, Long>,
+ QuerydslPredicateExecutor<{{entityName}}>{
+
+ }
