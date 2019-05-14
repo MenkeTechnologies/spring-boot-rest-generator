@@ -2,6 +2,8 @@ package com.jakobmenke.bootrestgenerator;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Objects;
 import java.util.Scanner;
 
 public class Templates {
@@ -37,16 +39,13 @@ public class Templates {
     private String getFile(String fileName) {
         StringBuilder result = new StringBuilder();
         ClassLoader classLoader = Templates.class.getClassLoader();
-        File file = new File(classLoader.getResource(fileName).getFile());
+        InputStream in = classLoader.getResourceAsStream(fileName);
 
-        try (Scanner scanner = new Scanner(file)) {
-
+        try (Scanner scanner = new Scanner(Objects.requireNonNull(in))) {
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
                 result.append(line).append("\n");
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
 
         return result.toString();
