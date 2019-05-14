@@ -2,13 +2,13 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.cagdasyigit.bootrestgenerator</groupId>
+	<groupId>com.jakobmenke.bootrestgenerator</groupId>
 	<artifactId>srping-boot-rest-generator</artifactId>
 	<version>1.0</version>
 	<packaging>jar</packaging>
 
 	<name>Spring Boot Rest Service Generator</name>
-	<url>http://www.cagdasyigit.com</url>
+	<url>http://jakobmenke.com</url>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -21,11 +21,6 @@
 
 
 	<dependencies>
-		<dependency>
-			<groupId>org.yaml</groupId>
-			<artifactId>snakeyaml</artifactId>
-			<version>1.21</version>
-		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
