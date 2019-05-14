@@ -53,7 +53,8 @@ public class Templates {
         String mainPackageName = mainPackage.replaceAll("/", ".");
         String fileTemplate = getFile("templates/entity.tmpl");
         fileTemplate = fileTemplate.replace("{{mainPackageName}}", mainPackageName);
-        fileTemplate = fileTemplate.replace("{{entityName}}", entity.getName());
+        fileTemplate = fileTemplate.replace("{{entityName}}", entity.getEntityName());
+        fileTemplate = fileTemplate.replace("{{tableName}}", entity.getTableName());
 
         StringBuilder stringBuilder = new StringBuilder();
         for (Column column : entity.getColumns()) {
