@@ -9,5 +9,4 @@ import java.util.List;
 public class Table {
     String name;
     List<Column> columns = new ArrayList<>();
-
 }
