@@ -15,31 +15,31 @@ import {{mainPackageName}}.repositories.{{entityName}}Repository;
 @EnableJpaRepositories(basePackages = { "{{mainPackageName}}.repositories" })
 public class {{entityName}}Dao {
 
-	@Autowired
-	{{entityName}}Repository repository;
-	
-	public List<{{entityName}}> findAll() {
-		return repository.findAll();
-	}
-	
-	public {{entityName}} findOne(Long id) {
-		return repository.findOne(id);
-	}
-	
-	public {{entityName}} save({{entityName}} entity) {
-		return repository.save(entity);
-	}
-	
-	public void delete(Long id) {
-		repository.delete(id);
-	}
-	
-	public void delete({{entityName}} entity) {
-		repository.delete(entity);
-	}
-	
-	public void deleteAll(List<{{entityName}}> entityList) {
-		repository.delete(entityList);
-	}
-	
+    @Autowired
+    {{entityName}}Repository repository;
+
+    public List<{{entityName}}> findAll() {
+    	return repository.findAll();
+    }
+
+    public {{entityName}} findOne(Long id) {
+    	return repository.findOne(id);
+    }
+
+    public {{entityName}} save({{entityName}} entity) {
+    	return repository.save(entity);
+    }
+
+    public void delete(Long id) {
+    	repository.delete(id);
+    }
+
+    public void delete({{entityName}} entity) {
+    	repository.delete(entity);
+    }
+
+    public void deleteAll(List<{{entityName}}> entityList) {
+    	repository.delete(entityList);
+    }
+
 }
