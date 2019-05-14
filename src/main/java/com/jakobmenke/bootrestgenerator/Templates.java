@@ -1,7 +1,5 @@
 package com.jakobmenke.bootrestgenerator;
 
-import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
 import java.util.Scanner;
@@ -55,7 +53,8 @@ public class Templates {
         String mainPackageName = mainPackage.replaceAll("/", ".");
         String fileTemplate = getFile("templates/entity.tmpl");
         fileTemplate = fileTemplate.replace("{{mainPackageName}}", mainPackageName);
-        fileTemplate = fileTemplate.replace("{{entityName}}", entity.getName());
+        fileTemplate = fileTemplate.replace("{{entityName}}", entity.getEntityName());
+        fileTemplate = fileTemplate.replace("{{tableName}}", entity.getTableName());
 
         StringBuilder stringBuilder = new StringBuilder();
         for (Column column : entity.getColumns()) {

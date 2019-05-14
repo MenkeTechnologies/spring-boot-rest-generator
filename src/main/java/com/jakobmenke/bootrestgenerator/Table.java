@@ -7,7 +7,7 @@ import java.util.List;
 
 @Data
 public class Table {
-    String name;
+    String tableName;
+    String entityName;
     List<Column> columns = new ArrayList<>();
-
 }
