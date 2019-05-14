@@ -19,27 +19,27 @@ public class {{entityName}}Dao {
     {{entityName}}Repository repository;
 
     public List<{{entityName}}> findAll() {
-    	return repository.findAll();
+        return repository.findAll();
     }
 
     public {{entityName}} findOne(Long id) {
-    	return repository.findOne(id);
+        return repository.findOne(id);
     }
 
     public {{entityName}} save({{entityName}} entity) {
-    	return repository.save(entity);
+        return repository.save(entity);
     }
 
     public void delete(Long id) {
-    	repository.delete(id);
+        repository.delete(id);
     }
 
     public void delete({{entityName}} entity) {
-    	repository.delete(entity);
+        repository.delete(entity);
     }
 
     public void deleteAll(List<{{entityName}}> entityList) {
-    	repository.delete(entityList);
+        repository.delete(entityList);
     }
 
 }
