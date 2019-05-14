@@ -9,8 +9,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class App {
-    private final static String sourceFolder = "/Users/wizard/IdeaProjects/Tweedle/src/main/java/";
-    private final static String mainPackage = "com/jakobmenke/boot";
+    private final static String SRC_FOLDER = "/Users/wizard/IdeaProjects/Tweedle/src/main/java/";
+    private final static String PACKAGE = "com/jakobmenke/boot";
     private static final String FILE_NAME = "dump.sql";
 
     public static void main(String[] args) {
@@ -94,16 +94,16 @@ public class App {
     private void writeEntities(ArrayList<Table> tables) {
         Templates templates = new Templates();
         for (Table entityName : tables) {
-            String entityTemplate = templates.getEntityTemplate(entityName, mainPackage);
+            String entityTemplate = templates.getEntityTemplate(entityName, PACKAGE);
             createFile("entity", entityName.getName() + ".java", entityTemplate);
 
-            String serviceTemplate = templates.getServiceTemplate(mainPackage, entityName.getName());
+            String serviceTemplate = templates.getServiceTemplate(PACKAGE, entityName.getName());
             createFile("rest", entityName.getName() + "Resource.java", serviceTemplate);
 
-            String daoTemplate = templates.getDaoTemplate(mainPackage, entityName.getName());
+            String daoTemplate = templates.getDaoTemplate(PACKAGE, entityName.getName());
             createFile("dao", entityName.getName() + "Dao.java", daoTemplate);
 
-            String repositoryTemplate = templates.getRepositoryTemplate(mainPackage, entityName.getName());
+            String repositoryTemplate = templates.getRepositoryTemplate(PACKAGE, entityName.getName());
             createFile("repositories", entityName.getName() + "Repository.java", repositoryTemplate);
         }
     }
@@ -113,7 +113,7 @@ public class App {
 
         try {
 
-            String path = sourceFolder + mainPackage + "/" + folderName;
+            String path = SRC_FOLDER + PACKAGE + "/" + folderName;
             File file = new File(path);
 
             if (!file.exists()){
