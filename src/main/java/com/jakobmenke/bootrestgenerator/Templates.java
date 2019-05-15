@@ -5,13 +5,13 @@ import java.util.Objects;
 import java.util.Scanner;
 
 public class Templates {
-    public String getServiceTemplate(String mainPackage, String entityName) {
+    public String getResourceTemplate(String mainPackage, String entityName) {
         String mainPackageName = mainPackage.replaceAll("/", ".");
         String fileTemplate = getFile("templates/rest.resource.tmpl");
         fileTemplate = fileTemplate.replace("{{mainPackageName}}", mainPackageName);
         fileTemplate = fileTemplate.replace("{{entityName}}", entityName);
         fileTemplate = fileTemplate.replace("{{serviceName}}", entityName.toLowerCase());
-        fileTemplate = fileTemplate.replace("{{restServicePrefix}}", "/rest");
+        fileTemplate = fileTemplate.replace("{{restServicePrefix}}", "/api");
 
         return fileTemplate;
     }
