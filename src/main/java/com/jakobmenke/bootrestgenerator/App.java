@@ -4,8 +4,10 @@ import lombok.Data;
 
 import java.io.*;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class App {
     private static String PACKAGE;
@@ -18,6 +20,7 @@ public class App {
         SRC_FOLDER = configuration.getSrcFolder();
         FILE_NAME = configuration.getFileName();
     }
+
     private void writeTemplates(ArrayList<Table> tables) {
         Templates templates = new Templates();
         for (Table entityName : tables) {
@@ -60,7 +63,7 @@ public class App {
 
         ArrayList<String> words = new ArrayList<>();
 
-        getWords(words);
+        getWords(words, Objects.requireNonNull(App.class.getClassLoader().getResourceAsStream(FILE_NAME)));
 
         parseWords(tables, words);
 
@@ -97,11 +100,29 @@ public class App {
 
                 tables.get(tables.size() - 1).getColumns().add(new Column(columnName, camelName, datatype, javaType));
             }
+
+            Pattern keyPattern = Pattern.compile("PRIMARY|FOREIGN");
+            if(keyPattern.matcher(word).matches()) {
+                String keyString = word + ' ' + words.get(i + 1) + words.get(i + 2);
+                Column keyColumn = getId(keyString);
+                Table table = tables.get(tables.size() - 1);
+                ListIterator<Column> columnListIterator = table.columns.listIterator();
+                while (columnListIterator.hasNext()) {
+                    Column column = columnListIterator.next();
+                    if (column.dbName.equals((keyColumn.dbName))) {
+                        keyColumn.setDataType(column.dataType);
+                        if(keyColumn.javaType == null)
+                            keyColumn.setJavaType(column.javaType);
+                        columnListIterator.remove();
+                        columnListIterator.add(keyColumn);
+                    }
+                }
+            }
         }
     }
 
-    private static void getWords(ArrayList<String> words) {
-        try (Scanner scanner = new Scanner(Objects.requireNonNull(App.class.getClassLoader().getResourceAsStream(FILE_NAME)))) {
+    private static void getWords(ArrayList<String> words, InputStream in) {
+        try (Scanner scanner = new Scanner(in)) {
             while (scanner.hasNext()) {
 
                 String word = scanner.next();
@@ -142,5 +163,33 @@ public class App {
 
         //default to string
         return "String";
+    }
+
+    static String firstLetterToCaps(String string) {
+        if(string.length() == 0)
+            return "";
+        return string.toUpperCase().substring(0, 1) + string.substring(1).toLowerCase();
+    }
+
+    static Column getId(String key) {
+        String camelName = null;
+        String dbName = null;
+        String dataType = null;
+        String javaType = null;
+        String idType;
+        Pattern pattern = Pattern.compile(".*`(.+)(_.*)`.*");
+        Matcher matcher = pattern.matcher(key);
+        if (matcher.find()) {
+            javaType = firstLetterToCaps(matcher.group(1));
+            camelName = matcher.group(1).toLowerCase();
+            dbName = matcher.group(1) + matcher.group(2);
+        }
+        if (key.matches("PRIMARY.+")) {
+            idType = "@Id";
+            javaType = null;
+        }
+        else
+            idType = "@ManyToOne";
+        return new Column(idType, dbName, camelName, dataType, javaType);
     }
 }
