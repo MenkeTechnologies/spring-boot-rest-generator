@@ -27,14 +27,14 @@ public class App {
             String entityTemplate = templates.getEntityTemplate(entityName, PACKAGE);
             createFile("entity", entityName.getEntityName() + ".java", entityTemplate);
 
-            String serviceTemplate = templates.getServiceTemplate(PACKAGE, entityName.getEntityName());
+            String serviceTemplate = templates.getResourceTemplate(PACKAGE, entityName.getEntityName());
             createFile("rest", entityName.getEntityName() + "Resource.java", serviceTemplate);
 
             String daoTemplate = templates.getDaoTemplate(PACKAGE, entityName.getEntityName());
             createFile("dao", entityName.getEntityName() + "Dao.java", daoTemplate);
 
             String repositoryTemplate = templates.getRepositoryTemplate(PACKAGE, entityName.getEntityName());
-            createFile("repositories", entityName.getEntityName() + "Repository.java", repositoryTemplate);
+            createFile("repository", entityName.getEntityName() + "Repository.java", repositoryTemplate);
         }
     }
 
