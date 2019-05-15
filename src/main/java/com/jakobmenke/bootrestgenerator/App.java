@@ -1,18 +1,23 @@
 package com.jakobmenke.bootrestgenerator;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
+import lombok.Data;
+
+import java.io.*;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class App {
-    private final static String SRC_FOLDER = "/Users/wizard/IdeaProjects/Tweedle/src/main/java/";
-    private final static String PACKAGE = "com/jakobmenke/boot";
-    private static final String FILE_NAME = "dump.sql";
+    private static String PACKAGE;
+    private static String SRC_FOLDER;
+    private static String FILE_NAME;
 
+    static {
+        Configuration configuration = new Configuration(Configuration.readConfig("config.properties"));
+        PACKAGE = configuration.getTargetPackage();
+        SRC_FOLDER = configuration.getSrcFolder();
+        FILE_NAME = configuration.getFileName();
+    }
     private void writeTemplates(ArrayList<Table> tables) {
         Templates templates = new Templates();
         for (Table entityName : tables) {
