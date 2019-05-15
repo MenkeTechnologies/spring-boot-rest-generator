@@ -63,7 +63,7 @@ public class Templates {
             stringBuilder.append(indent).append(column.getJavaType()).append(" ").append(column.getCamelName()).append(";\n\n");
         }
 
-        stringBuilder.append("\n}");
+        stringBuilder.append("}");
 
         return fileTemplate + stringBuilder.toString();
     }
