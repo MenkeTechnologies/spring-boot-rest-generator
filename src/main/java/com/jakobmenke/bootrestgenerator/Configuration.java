@@ -15,6 +15,9 @@ class Configuration {
     static Properties readConfig(String configFileName) {
         ClassLoader classLoader = Templates.class.getClassLoader();
         InputStream in = classLoader.getResourceAsStream(configFileName);
+        if(in == null) {
+            return null;
+        }
         Properties props = new Properties();
         try {
             props.load(in);
