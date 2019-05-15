@@ -19,7 +19,7 @@ public class App {
             String entityTemplate = templates.getEntityTemplate(entityName, PACKAGE);
             createFile("entity", entityName.getEntityName() + ".java", entityTemplate);
 
-            String serviceTemplate = templates.getServiceTemplate(PACKAGE, entityName.getEntityName());
+            String serviceTemplate = templates.getResourceTemplate(PACKAGE, entityName.getEntityName());
             createFile("rest", entityName.getEntityName() + "Resource.java", serviceTemplate);
 
             String daoTemplate = templates.getDaoTemplate(PACKAGE, entityName.getEntityName());
