@@ -168,7 +168,16 @@ public class App {
     static String firstLetterToCaps(String string) {
         if(string.length() == 0)
             return "";
-        return string.toUpperCase().substring(0, 1) + string.substring(1).toLowerCase();
+        return string.toUpperCase().substring(0, 1) + string.substring(1);
+    }
+    static String camelName(String string) {
+        StringBuffer buffer = new StringBuffer(string.toLowerCase());
+        for (int i = 0; i < buffer.length(); i++) {
+            if(buffer.charAt(i) == '_') {
+                buffer.replace(i, i+2, buffer.substring(i+1, i+2).toUpperCase());
+            }
+        }
+        return buffer.toString();
     }
 
     static Column getId(String key) {
@@ -180,8 +189,8 @@ public class App {
         Pattern pattern = Pattern.compile(".*`(.+)(_.*)`.*");
         Matcher matcher = pattern.matcher(key);
         if (matcher.find()) {
-            javaType = firstLetterToCaps(matcher.group(1));
-            camelName = matcher.group(1).toLowerCase();
+            javaType = firstLetterToCaps(camelName(matcher.group(1)));
+            camelName = camelName(matcher.group(1).toLowerCase());
             dbName = matcher.group(1) + matcher.group(2);
         }
         if (key.matches("PRIMARY.+")) {
