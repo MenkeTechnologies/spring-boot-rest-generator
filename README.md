@@ -1,10 +1,9 @@
 # spring-boot-rest-generator
 
+- put in folder, package and SQL dump file name in src/main/resources/config.properties
 
-- put your mysql ddl file named dump.sql file in src/main/resources
+- put your mysql ddl file named whatever is in config.properties in src/main/resources
 
-- change SRC_FOLDER and PACKAGE in App.java to match your path
-
-- run the psvm
+- run the psvm in App.java
 
 # created by MenkeTechnologies
