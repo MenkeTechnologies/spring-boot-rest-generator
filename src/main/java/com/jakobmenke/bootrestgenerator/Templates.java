@@ -59,10 +59,14 @@ public class Templates {
         StringBuilder stringBuilder = new StringBuilder();
         for (Column column : entity.getColumns()) {
             String indent = "    ";
-            if(column.getIdType() != null) {
+            if (column.getIdType() != null) {
                 stringBuilder.append(indent).append(column.getIdType()).append("\n");
             }
-            stringBuilder.append(indent).append("@Column(name = \"").append(column.getDbName()).append("\")\n");
+            if (column.getIdType() != null && column.getIdType().equalsIgnoreCase("@ManyToOne")) {
+                stringBuilder.append(indent).append("@JoinColumn(name = \"").append(column.getDbName()).append("\")\n");
+            } else {
+                stringBuilder.append(indent).append("@Column(name = \"").append(column.getDbName()).append("\")\n");
+            }
             stringBuilder.append(indent).append(column.getJavaType()).append(" ").append(column.getCamelName()).append(";\n\n");
         }
 

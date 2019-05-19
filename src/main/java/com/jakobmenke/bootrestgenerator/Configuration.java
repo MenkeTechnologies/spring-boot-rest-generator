@@ -12,10 +12,16 @@ class Configuration {
     private final String targetPackage;
     private final String fileName;
 
+    Configuration(Properties props) {
+        this.fileName = props.getProperty("file.name");
+        this.srcFolder = props.getProperty("target.folder");
+        this.targetPackage = props.getProperty("target.package");
+    }
+
     static Properties readConfig(String configFileName) {
         ClassLoader classLoader = Templates.class.getClassLoader();
         InputStream in = classLoader.getResourceAsStream(configFileName);
-        if(in == null) {
+        if (in == null) {
             return null;
         }
         Properties props = new Properties();
@@ -25,10 +31,5 @@ class Configuration {
             e.printStackTrace();
         }
         return props;
-    }
-    Configuration(Properties props) {
-        this.fileName = props.getProperty("file.name");
-        this.srcFolder = props.getProperty("target.folder");
-        this.targetPackage = props.getProperty("target.package");
     }
 }

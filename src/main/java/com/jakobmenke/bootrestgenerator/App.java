@@ -1,13 +1,10 @@
 package com.jakobmenke.bootrestgenerator;
 
-import lombok.Data;
-
 import java.io.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class App {
     private static String PACKAGE;
@@ -102,7 +99,7 @@ public class App {
             }
 
             Pattern keyPattern = Pattern.compile("PRIMARY|FOREIGN");
-            if(keyPattern.matcher(word).matches()) {
+            if (keyPattern.matcher(word).matches()) {
                 String keyString = word + ' ' + words.get(i + 1) + words.get(i + 2);
                 Column keyColumn = getId(keyString);
                 Table table = tables.get(tables.size() - 1);
@@ -111,7 +108,7 @@ public class App {
                     Column column = columnListIterator.next();
                     if (column.dbName.equals((keyColumn.dbName))) {
                         keyColumn.setDataType(column.dataType);
-                        if(keyColumn.javaType == null)
+                        if (keyColumn.javaType == null)
                             keyColumn.setJavaType(column.javaType);
                         columnListIterator.remove();
                         columnListIterator.add(keyColumn);
@@ -166,15 +163,16 @@ public class App {
     }
 
     static String firstLetterToCaps(String string) {
-        if(string.length() == 0)
+        if (string.length() == 0)
             return "";
         return string.toUpperCase().substring(0, 1) + string.substring(1);
     }
+
     static String camelName(String string) {
         StringBuffer buffer = new StringBuffer(string.toLowerCase());
         for (int i = 0; i < buffer.length(); i++) {
-            if(buffer.charAt(i) == '_') {
-                buffer.replace(i, i+2, buffer.substring(i+1, i+2).toUpperCase());
+            if (buffer.charAt(i) == '_') {
+                buffer.replace(i, i + 2, buffer.substring(i + 1, i + 2).toUpperCase());
             }
         }
         return buffer.toString();
@@ -196,8 +194,7 @@ public class App {
         if (key.matches("PRIMARY.+")) {
             idType = "@Id";
             javaType = null;
-        }
-        else
+        } else
             idType = "@ManyToOne";
         return new Column(idType, dbName, camelName, dataType, javaType);
     }
