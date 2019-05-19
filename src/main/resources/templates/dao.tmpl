@@ -16,30 +16,30 @@ import {{mainPackageName}}.repository.{{entityName}}Repository;
 public class {{entityName}}Dao {
 
     @Autowired
-    {{entityName}}Repository repository;
+    {{entityName}}Repository {{camelRepositoryName}};
 
     public List<{{entityName}}> findAll() {
-        return repository.findAll();
+        return {{camelRepositoryName}}.findAll();
     }
 
     public {{entityName}} findOne(Long id) {
-        return repository.findById(id).orElse(null);
+        return {{camelRepositoryName}}.findById(id).orElse(null);
     }
 
     public {{entityName}} save({{entityName}} entity) {
-        return repository.save(entity);
+        return {{camelRepositoryName}}.save(entity);
     }
 
     public void delete(Long id) {
-        repository.deleteById(id);
+        {{camelRepositoryName}}.deleteById(id);
     }
 
     public void delete({{entityName}} entity) {
-        repository.delete(entity);
+        {{camelRepositoryName}}.delete(entity);
     }
 
     public void deleteAll(List<{{entityName}}> entityList) {
-        repository.deleteAll();
+        {{camelRepositoryName}}.deleteAll();
     }
 
 }

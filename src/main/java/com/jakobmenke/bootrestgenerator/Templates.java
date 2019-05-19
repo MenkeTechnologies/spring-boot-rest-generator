@@ -21,6 +21,8 @@ public class Templates {
         String fileTemplate = getFile("templates/dao.tmpl");
         fileTemplate = fileTemplate.replace("{{mainPackageName}}", mainPackageName);
         fileTemplate = fileTemplate.replace("{{entityName}}", entityName);
+        String camelRepoName = entityName.substring(0, 1).toLowerCase() + entityName.substring(1) + "Repository";
+        fileTemplate = fileTemplate.replace("{{camelRepositoryName}}", camelRepoName);
 
         return fileTemplate;
     }
