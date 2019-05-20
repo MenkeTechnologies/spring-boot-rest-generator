@@ -1,5 +1,8 @@
 # spring-boot-rest-generator
 
+
+## Convert DDL SQL file to Spring Boot Rest Project
+
 - put in folder, package and SQL dump file name in src/main/resources/config.properties
 
 - put your mysql ddl file named whatever is in config.properties in src/main/resources
