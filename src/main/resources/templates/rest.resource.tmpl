@@ -1,8 +1,6 @@
 package {{mainPackageName}}.rest; 
 
 import org.springframework.web.bind.annotation.*;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.http.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
@@ -10,8 +8,10 @@ import java.util.List;
 import {{mainPackageName}}.entity.{{entityName}};
 import {{mainPackageName}}.dao.{{entityName}}Dao;
 
+import {{mainPackageName}}.utils.GlobalConstants;
+
 @RestController
-@RequestMapping("{{restServicePrefix}}/{{serviceName}}")
+@RequestMapping({{restServicePrefix}} + "/{{serviceName}}")
 public class {{entityName}}Resource {
 
     @Autowired

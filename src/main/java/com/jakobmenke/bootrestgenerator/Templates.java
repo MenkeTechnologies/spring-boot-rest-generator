@@ -11,7 +11,7 @@ public class Templates {
         fileTemplate = fileTemplate.replace("{{mainPackageName}}", mainPackageName);
         fileTemplate = fileTemplate.replace("{{entityName}}", entityName);
         fileTemplate = fileTemplate.replace("{{serviceName}}", entityName.toLowerCase());
-        fileTemplate = fileTemplate.replace("{{restServicePrefix}}", "/api");
+        fileTemplate = fileTemplate.replace("{{restServicePrefix}}", "GlobalConstants.CONTEXT_PATH");
 
         return fileTemplate;
     }
@@ -23,6 +23,14 @@ public class Templates {
         fileTemplate = fileTemplate.replace("{{entityName}}", entityName);
         String camelRepoName = entityName.substring(0, 1).toLowerCase() + entityName.substring(1) + "Repository";
         fileTemplate = fileTemplate.replace("{{camelRepositoryName}}", camelRepoName);
+
+        return fileTemplate;
+    }
+
+    public String getConstantsTemplate(String mainPackage, String entityName) {
+        String mainPackageName = mainPackage.replaceAll("/", ".");
+        String fileTemplate = getFile("templates/constants.tmpl");
+        fileTemplate = fileTemplate.replace("{{mainPackageName}}", mainPackageName);
 
         return fileTemplate;
     }

@@ -33,6 +33,9 @@ public class App {
             String repositoryTemplate = templates.getRepositoryTemplate(PACKAGE, entityName.getEntityName());
             createFile("repository", entityName.getEntityName() + "Repository.java", repositoryTemplate);
         }
+
+        String constantsTemplate = templates.getConstantsTemplate(PACKAGE, null);
+        createFile("utils", "GlobalConstants.java", constantsTemplate);
     }
 
     private void createFile(String folderName, String fileName, String fileTemplate) {
@@ -44,7 +47,7 @@ public class App {
             File file = new File(path);
 
             if (!file.exists()) {
-                boolean mkdir = file.mkdir();
+                boolean mkdirStatus = file.mkdir();
             }
             writer = new PrintWriter(path + "/" + fileName, "UTF-8");
             writer.print(fileTemplate);
