@@ -122,9 +122,14 @@ public class App {
         try (Scanner scanner = new Scanner(in)) {
             while (scanner.hasNext()) {
 
-                String word = scanner.next();
+                String line = scanner.nextLine();
 
-                words.add(word);
+                //ignore commented lines
+                if (!line.trim().startsWith("#") && !line.trim().startsWith("--")) {
+
+                    words.addAll(Arrays.stream(line.split(" ")).filter(w -> w.length() > 0).collect(Collectors.toList()));
+                }
+
             }
         } catch (Exception e) {
             e.printStackTrace();
