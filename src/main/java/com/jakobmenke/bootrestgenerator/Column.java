@@ -7,10 +7,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class Column {
-    String dbName;
-    String camelName;
-    String dataType;
-    String javaType;
+    private String dbName;
+    private String camelName;
+    private String dataType;
+    private String javaType;
     private String idType;
 
     @Builder

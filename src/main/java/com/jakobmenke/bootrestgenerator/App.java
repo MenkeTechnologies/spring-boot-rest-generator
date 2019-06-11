@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class App {
+    public static final String DB_ESCAPE_CHARACTER = "`";
     private static String PACKAGE;
     private static String SRC_FOLDER;
     private static String FILE_NAME;
@@ -79,42 +80,48 @@ public class App {
                 String nextWord = words.get(i + 1);
                 if (nextWord.equalsIgnoreCase("table")) {
                     String tableWord = words.get(i + 2);
-                    List<String> comps = Arrays.stream(tableWord.replace("`", "").split("_")).collect(Collectors.toList());
+                    List<String> comps = Arrays.stream(tableWord.replace(DB_ESCAPE_CHARACTER, "").split("_")).collect(Collectors.toList());
                     String entityName = comps.stream().map(w -> w.substring(0, 1).toUpperCase() + w.substring(1).toLowerCase()).collect(Collectors.joining(""));
                     Table table = new Table();
                     table.setEntityName(entityName);
-                    table.setTableName(tableWord.replaceAll("`", ""));
+                    table.setTableName(tableWord.replaceAll(DB_ESCAPE_CHARACTER, ""));
                     tables.add(table);
                 }
             }
 
-            Pattern pattern = Pattern.compile("\\b(varchar|tinyint|bigint|int|double|float|time|datetime|timestamp|bit)[()\\d]*");
+            Pattern pattern = Pattern.compile("\\b(?i:varchar|tinyint|bigint|int|double|float|time|datetime|timestamp|bit)[()\\d]*");
 
             if (pattern.matcher(word).matches()) {
-                String columnName = words.get(i - 1).replaceAll("`", "");
+                String columnName = words.get(i - 1).replaceAll(DB_ESCAPE_CHARACTER, "");
                 String datatype = word;
                 String javaType = getJavaType(datatype);
-                List<String> comps = Arrays.stream(columnName.replace("`", "").split("_")).collect(Collectors.toList());
+                List<String> comps = Arrays.stream(columnName.replace(DB_ESCAPE_CHARACTER, "").split("_")).collect(Collectors.toList());
                 String camelName = comps.stream().map(w -> w.substring(0, 1).toUpperCase() + w.substring(1).toLowerCase()).collect(Collectors.joining(""));
                 camelName = camelName.substring(0, 1).toLowerCase() + camelName.substring(1);
 
                 tables.get(tables.size() - 1).getColumns().add(new Column(columnName, camelName, datatype, javaType));
             }
 
-            Pattern keyPattern = Pattern.compile("PRIMARY|FOREIGN");
-            if (keyPattern.matcher(word).matches()) {
-                String keyString = word + ' ' + words.get(i + 1) + words.get(i + 2);
+            Pattern keyPattern = Pattern.compile("^(PRIMARY|FOREIGN)");
+            if (keyPattern.matcher(word.toUpperCase()).matches()) {
+                String keyString = words.subList(i, i + 10).stream().collect(Collectors.joining(" "));
                 Column keyColumn = getId(keyString);
                 Table table = tables.get(tables.size() - 1);
-                ListIterator<Column> columnListIterator = table.columns.listIterator();
-                while (columnListIterator.hasNext()) {
-                    Column column = columnListIterator.next();
-                    if (column.dbName.equals((keyColumn.dbName))) {
-                        keyColumn.setDataType(column.dataType);
-                        if (keyColumn.javaType == null)
-                            keyColumn.setJavaType(column.javaType);
-                        columnListIterator.remove();
-                        columnListIterator.add(keyColumn);
+                List<Column> columns = table.getColumns();
+                for (int i1 = 0; i1 < columns.size(); i1++) {
+                    Column column = columns.get(i1);
+                    if (column.getIdType() == null) {
+
+                        if (column.getDbName() != null && column.getDbName().equalsIgnoreCase(keyColumn.getDbName())) {
+                            //foreign key
+                            keyColumn.setCamelName(column.getCamelName());
+                            table.getColumns().set(i1, keyColumn);
+                        } else {
+                            //primar key
+                            if (column.getCamelName() != null && column.getCamelName().equalsIgnoreCase(keyColumn.getCamelName())) {
+                                table.getColumns().set(i1, keyColumn);
+                            }
+                        }
                     }
                 }
             }
@@ -132,7 +139,6 @@ public class App {
 
                     words.addAll(Arrays.stream(line.split(" ")).filter(w -> w.length() > 0).collect(Collectors.toList()));
                 }
-
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -204,16 +210,22 @@ public class App {
         String dataType = null;
         String javaType = null;
         String idType;
-        Pattern pattern = Pattern.compile(".*`(.+)(_.*)`.*");
-        Matcher matcher = pattern.matcher(key);
+        Pattern pattern = Pattern.compile("^FOREIGN KEY\\s*\\((\\S+)\\)\\s+REFERENCES\\s*(\\S+)\\s*\\((\\S+)\\)");
+        Matcher matcher = pattern.matcher(key.toUpperCase());
         if (matcher.find()) {
-            javaType = firstLetterToCaps(camelName(matcher.group(1)));
-            camelName = camelName(matcher.group(1).toLowerCase());
-            dbName = matcher.group(1) + matcher.group(2);
+            String foreignKey = matcher.group(1);
+            String otherTableName = matcher.group(2);
+            String primaryKeyOtherTable = matcher.group(3);
+            javaType = firstLetterToCaps(camelName(otherTableName.replaceAll(DB_ESCAPE_CHARACTER, "")));
+            camelName = camelName(foreignKey.replaceAll(DB_ESCAPE_CHARACTER, ""));
+            dbName = primaryKeyOtherTable.replaceAll(DB_ESCAPE_CHARACTER, "");
         }
-        if (key.matches("PRIMARY.+")) {
+        pattern = Pattern.compile("^PRIMARY KEY\\s*\\((\\S+)\\).*");
+        matcher = pattern.matcher(key.toUpperCase());
+        if (matcher.matches()) {
             idType = "@Id";
-            javaType = null;
+            dbName = matcher.group(1).replaceAll(DB_ESCAPE_CHARACTER, "");
+            javaType = "Integer";
         } else
             idType = "@ManyToOne";
         return new Column(idType, dbName, camelName, dataType, javaType);
