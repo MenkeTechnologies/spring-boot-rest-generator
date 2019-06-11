@@ -88,7 +88,7 @@ public class App {
                 }
             }
 
-            Pattern pattern = Pattern.compile("\\b(varchar|tinyint|bigint|int|datetime|timestamp|bit)[()\\d]*");
+            Pattern pattern = Pattern.compile("\\b(varchar|tinyint|bigint|int|double|float|time|datetime|timestamp|bit)[()\\d]*");
 
             if (pattern.matcher(word).matches()) {
                 String columnName = words.get(i - 1).replaceAll("`", "");
@@ -160,6 +160,18 @@ public class App {
         pattern = Pattern.compile("\\bbit[()\\d]*");
         if (pattern.matcher(datatype).matches()) {
             return "String";
+        }
+        pattern = Pattern.compile("\\bfloat[()\\d]*");
+        if (pattern.matcher(datatype).matches()) {
+            return "Float";
+        }
+        pattern = Pattern.compile("\\bdouble[()\\d]*");
+        if (pattern.matcher(datatype).matches()) {
+            return "Double";
+        }
+        pattern = Pattern.compile("\\btime[()\\d]*");
+        if (pattern.matcher(datatype).matches()) {
+            return "LocalTime";
         }
         pattern = Pattern.compile("\\btimestamp[()\\d]*");
         if (pattern.matcher(datatype).matches()) {
