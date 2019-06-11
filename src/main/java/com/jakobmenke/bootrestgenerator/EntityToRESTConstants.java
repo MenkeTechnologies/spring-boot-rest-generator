@@ -16,6 +16,7 @@ public class EntityToRESTConstants {
     public static final String FOREIGN_KEY_REFERENCES_REGEX = "^FOREIGN KEY\\s*\\((\\S+)\\)\\s+REFERENCES\\s*(\\S+)\\s*\\((\\S+)\\)";
     public static final String PRIMARY_KEY_S_S = "^PRIMARY KEY\\s*\\((\\S+)\\).*";
     public static final String UNDERSCORE = "_";
+    public static final String SPACE_CHAR = " ";
     static String PACKAGE;
     static String SRC_FOLDER;
     static String FILE_NAME;

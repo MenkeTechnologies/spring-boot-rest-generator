@@ -45,18 +45,18 @@ public class Util {
                 ColumnToField keyColumn = getId(keyString);
                 Entity entity = entities.get(entities.size() - 1);
                 List<ColumnToField> columns = entity.getColumns();
-                for (int i1 = 0; i1 < columns.size(); i1++) {
-                    ColumnToField column = columns.get(i1);
+                for (int j = 0; j < columns.size(); j++) {
+                    ColumnToField column = columns.get(j);
                     if (column.getDatabaseIdType() == null) {
 
                         if (column.getDatabaseColumnName() != null && column.getDatabaseColumnName().equalsIgnoreCase(keyColumn.getDatabaseColumnName())) {
                             //foreign key
                             keyColumn.setCamelCaseFieldName(column.getCamelCaseFieldName().replaceFirst("[iI]d$", ""));
-                            entity.getColumns().set(i1, keyColumn);
+                            entity.getColumns().set(j, keyColumn);
                         } else {
                             //primary key
                             if (column.getCamelCaseFieldName() != null && column.getCamelCaseFieldName().equalsIgnoreCase(keyColumn.getCamelCaseFieldName())) {
-                                entity.getColumns().set(i1, keyColumn);
+                                entity.getColumns().set(j, keyColumn);
                             }
                         }
                     }
@@ -74,7 +74,7 @@ public class Util {
                 //ignore commented lines
                 if (!line.trim().startsWith("#") && !line.trim().startsWith("--")) {
 
-                    words.addAll(Arrays.stream(line.split(" ")).filter(w -> w.length() > 0).collect(Collectors.toList()));
+                    words.addAll(Arrays.stream(line.split(EntityToRESTConstants.SPACE_CHAR)).filter(w -> w.length() > 0).collect(Collectors.toList()));
                 }
             }
         } catch (Exception e) {
