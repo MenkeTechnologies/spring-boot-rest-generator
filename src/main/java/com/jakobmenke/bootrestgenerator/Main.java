@@ -107,7 +107,7 @@ public class Main {
 
                         if (column.getDatabaseColumnName() != null && column.getDatabaseColumnName().equalsIgnoreCase(keyColumn.getDatabaseColumnName())) {
                             //foreign key
-                            keyColumn.setCamelCaseFieldName(column.getCamelCaseFieldName());
+                            keyColumn.setCamelCaseFieldName(column.getCamelCaseFieldName().replaceFirst("[iI]d$", ""));
                             entity.getColumns().set(i1, keyColumn);
                         } else {
                             //primary key

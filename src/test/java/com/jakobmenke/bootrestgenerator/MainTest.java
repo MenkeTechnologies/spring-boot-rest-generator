@@ -1,45 +1,51 @@
 package com.jakobmenke.bootrestgenerator;
+
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayInputStream;
-import java.nio.charset.Charset;
-import java.sql.Timestamp;
-import java.util.ArrayList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-class AppTest {
+class MainTest {
     @Test
-    void testGetKey() {
+    void getKey() {
         String primaryKey = "PRIMARY KEY (`ACTIVITY_ID`)";
-        Column expected = new Column("@Id", "ACTIVITY_ID", "activity", null, null);
-        assertEquals(expected, App.getId(primaryKey));
+        ColumnToField expected = new ColumnToField("@Id", "ACTIVITY_ID", null, null, "Integer");
+        assertEquals(expected, Main.getId(primaryKey));
+    }
 
-        String foreignKey = "FOREIGN KEY (`TRANSCRIPT_ID`)";
-        Column expected1 = new Column("@ManyToOne", "TRANSCRIPT_ID", "transcript", null, "Transcript");
-        assertEquals(expected1, App.getId(foreignKey));
+    @Test
+    void getKey2() {
+        String foreignKey = "FOREIGN KEY (`TRANSCRIPT_ID`) REFERENCES `TRANSCRIPT` (`TRANSCRIPT_ID`) ";
+        ColumnToField expected1 = new ColumnToField("@ManyToOne", "TRANSCRIPT_ID", "transcriptId", null, "Transcript");
+        assertEquals(expected1, Main.getId(foreignKey));
+    }
 
-        Column expected2 = new Column("@ManyToOne", "TESTING_ID", "testing", null, "Testing");
-        String foreignKey1 = "FOREIGN KEY (`TESTING_ID`)";
-        assertEquals(expected2, App.getId(foreignKey1));
+    @Test
+    void getKey3() {
+        ColumnToField expected2 = new ColumnToField("@ManyToOne", "TESTING_ID", "testingId", null, "Testing");
+        String foreignKey1 = "FOREIGN KEY (`TESTING_ID`) REFERENCES `TESTING` (`TESTING_ID`)";
+        assertEquals(expected2, Main.getId(foreignKey1));
+    }
 
-        Column expected3 = new Column("@ManyToOne", "TESTING_NO_BAD_ID", "testingNoBad", null, "TestingNoBad");
-        String foreignKey2 = "FOREIGN KEY (`TESTING_NO_BAD_ID`)";
-        assertEquals(expected3, App.getId(foreignKey2));
+    @Test
+    void getKey4() {
+
+        ColumnToField expected3 = new ColumnToField("@ManyToOne", "TESTING_NO_BAD_ID", "testingNoBadId", null, "TestingNoBad");
+        String foreignKey2 = "FOREIGN KEY (`TESTING_NO_BAD_ID`) REFERENCES `TESTING_NO_BAD` (`TESTING_NO_BAD_ID`)";
+        assertEquals(expected3, Main.getId(foreignKey2));
     }
     @Test
-    void testToCaps() {
-        String testCase0 = "this WILL Be Capitalized";
+    void toCaps() {
+        String testCase0 = "this will be capitalized";
         String testCase1 = "";
         String testCase2 = "1019 test";
-        assertEquals("This will be capitalized", App.firstLetterToCaps(testCase0));
-        assertEquals("", App.firstLetterToCaps(testCase1));
-        assertEquals("1019 test", App.firstLetterToCaps(testCase2));
+        assertEquals("This will be capitalized", Main.firstLetterToCaps(testCase0));
+        assertEquals("", Main.firstLetterToCaps(testCase1));
+        assertEquals("1019 test", Main.firstLetterToCaps(testCase2));
     }
 
     @Test
-    void testCamelName() {
-        assertEquals("helloWorld", App.camelName("HELLO_WorLD"));
-        assertEquals("helloW", App.camelName("HELLO_W"));
+    void camelName() {
+        assertEquals("helloWorld", Main.camelName("HELLO_WorLD"));
+        assertEquals("helloW", Main.camelName("HELLO_W"));
     }
 }
