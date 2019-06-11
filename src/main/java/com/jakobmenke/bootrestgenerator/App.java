@@ -7,17 +7,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class App {
-    public static final String DB_ESCAPE_CHARACTER = "`";
     private static String PACKAGE;
     private static String SRC_FOLDER;
     private static String FILE_NAME;
-
-    static {
-        Configuration configuration = new Configuration(Configuration.readConfig("config.properties"));
-        PACKAGE = configuration.getTargetPackage();
-        SRC_FOLDER = configuration.getSrcFolder();
-        FILE_NAME = configuration.getFileName();
-    }
 
     private void writeTemplates(ArrayList<Table> tables) {
         Templates templates = new Templates();
@@ -60,6 +52,11 @@ public class App {
 
     public static void main(String[] args) {
 
+        Configuration configuration = new Configuration(Configuration.readConfig("config.properties"));
+        PACKAGE = configuration.getTargetPackage();
+        SRC_FOLDER = configuration.getSrcFolder();
+        FILE_NAME = configuration.getFileName();
+
         ArrayList<Table> tables = new ArrayList<>();
 
         ArrayList<String> words = new ArrayList<>();
@@ -80,29 +77,29 @@ public class App {
                 String nextWord = words.get(i + 1);
                 if (nextWord.equalsIgnoreCase("table")) {
                     String tableWord = words.get(i + 2);
-                    List<String> comps = Arrays.stream(tableWord.replace(DB_ESCAPE_CHARACTER, "").split("_")).collect(Collectors.toList());
+                    List<String> comps = Arrays.stream(tableWord.replace(Constants.DB_ESCAPE_CHARACTER, "").split("_")).collect(Collectors.toList());
                     String entityName = comps.stream().map(w -> w.substring(0, 1).toUpperCase() + w.substring(1).toLowerCase()).collect(Collectors.joining(""));
                     Table table = new Table();
                     table.setEntityName(entityName);
-                    table.setTableName(tableWord.replaceAll(DB_ESCAPE_CHARACTER, ""));
+                    table.setTableName(tableWord.replaceAll(Constants.DB_ESCAPE_CHARACTER, ""));
                     tables.add(table);
                 }
             }
 
-            Pattern pattern = Pattern.compile("\\b(?i:varchar|tinyint|bigint|int|double|float|time|datetime|timestamp|bit)[()\\d]*");
+            Pattern pattern = Pattern.compile(Constants.SUPPORTED_DATA_TYPES_REGEX);
 
             if (pattern.matcher(word).matches()) {
-                String columnName = words.get(i - 1).replaceAll(DB_ESCAPE_CHARACTER, "");
+                String columnName = words.get(i - 1).replaceAll(Constants.DB_ESCAPE_CHARACTER, "");
                 String datatype = word;
                 String javaType = getJavaType(datatype);
-                List<String> comps = Arrays.stream(columnName.replace(DB_ESCAPE_CHARACTER, "").split("_")).collect(Collectors.toList());
+                List<String> comps = Arrays.stream(columnName.replace(Constants.DB_ESCAPE_CHARACTER, "").split("_")).collect(Collectors.toList());
                 String camelName = comps.stream().map(w -> w.substring(0, 1).toUpperCase() + w.substring(1).toLowerCase()).collect(Collectors.joining(""));
                 camelName = camelName.substring(0, 1).toLowerCase() + camelName.substring(1);
 
                 tables.get(tables.size() - 1).getColumns().add(new Column(columnName, camelName, datatype, javaType));
             }
 
-            Pattern keyPattern = Pattern.compile("^(PRIMARY|FOREIGN)");
+            Pattern keyPattern = Pattern.compile(Constants.PRIMARY_FOREIGN_REGEX);
             if (keyPattern.matcher(word.toUpperCase()).matches()) {
                 String keyString = words.subList(i, i + 10).stream().collect(Collectors.joining(" "));
                 Column keyColumn = getId(keyString);
@@ -147,39 +144,39 @@ public class App {
 
     private static String getJavaType(String datatype) {
 
-        Pattern pattern = Pattern.compile("\\bvarchar[()\\d]*");
+        Pattern pattern = Pattern.compile(Constants.VARCHAR_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "String";
         }
-        pattern = Pattern.compile("\\b(tinyint|int)[()\\d]*");
+        pattern = Pattern.compile(Constants.INT_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "Integer";
         }
-        pattern = Pattern.compile("\\bbigint[()\\d]*");
+        pattern = Pattern.compile(Constants.BIGINT_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "Long";
         }
-        pattern = Pattern.compile("\\bdatetime[()\\d]*");
+        pattern = Pattern.compile(Constants.DATETIME_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "LocalDate";
         }
-        pattern = Pattern.compile("\\bbit[()\\d]*");
+        pattern = Pattern.compile(Constants.BIT_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "String";
         }
-        pattern = Pattern.compile("\\bfloat[()\\d]*");
+        pattern = Pattern.compile(Constants.FLOAT_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "Float";
         }
-        pattern = Pattern.compile("\\bdouble[()\\d]*");
+        pattern = Pattern.compile(Constants.DOUBLE_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "Double";
         }
-        pattern = Pattern.compile("\\btime[()\\d]*");
+        pattern = Pattern.compile(Constants.TIME_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "LocalTime";
         }
-        pattern = Pattern.compile("\\btimestamp[()\\d]*");
+        pattern = Pattern.compile(Constants.TIMESTAMP_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "LocalDateTime";
         }
@@ -210,21 +207,21 @@ public class App {
         String dataType = null;
         String javaType = null;
         String idType;
-        Pattern pattern = Pattern.compile("^FOREIGN KEY\\s*\\((\\S+)\\)\\s+REFERENCES\\s*(\\S+)\\s*\\((\\S+)\\)");
+        Pattern pattern = Pattern.compile(Constants.FOREIGN_KEY_REFERENCES_REGEX);
         Matcher matcher = pattern.matcher(key.toUpperCase());
         if (matcher.find()) {
             String foreignKey = matcher.group(1);
             String otherTableName = matcher.group(2);
             String primaryKeyOtherTable = matcher.group(3);
-            javaType = firstLetterToCaps(camelName(otherTableName.replaceAll(DB_ESCAPE_CHARACTER, "")));
-            camelName = camelName(foreignKey.replaceAll(DB_ESCAPE_CHARACTER, ""));
-            dbName = primaryKeyOtherTable.replaceAll(DB_ESCAPE_CHARACTER, "");
+            javaType = firstLetterToCaps(camelName(otherTableName.replaceAll(Constants.DB_ESCAPE_CHARACTER, "")));
+            camelName = camelName(foreignKey.replaceAll(Constants.DB_ESCAPE_CHARACTER, ""));
+            dbName = primaryKeyOtherTable.replaceAll(Constants.DB_ESCAPE_CHARACTER, "");
         }
-        pattern = Pattern.compile("^PRIMARY KEY\\s*\\((\\S+)\\).*");
+        pattern = Pattern.compile(Constants.PRIMARY_KEY_S_S);
         matcher = pattern.matcher(key.toUpperCase());
         if (matcher.matches()) {
             idType = "@Id";
-            dbName = matcher.group(1).replaceAll(DB_ESCAPE_CHARACTER, "");
+            dbName = matcher.group(1).replaceAll(Constants.DB_ESCAPE_CHARACTER, "");
             javaType = "Integer";
         } else
             idType = "@ManyToOne";
