@@ -1,10 +1,7 @@
 package com.jakobmenke.bootrestgenerator;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -49,13 +46,13 @@ public class Util {
                     ColumnToField column = columns.get(j);
                     if (column.getDatabaseIdType() == null) {
 
-                        if (column.getDatabaseColumnName() != null && column.getDatabaseColumnName().equalsIgnoreCase(keyColumn.getDatabaseColumnName())) {
+                        if(Objects.equals(column.getDatabaseColumnName(), keyColumn.getDatabaseColumnName())){
                             //foreign key
                             keyColumn.setCamelCaseFieldName(column.getCamelCaseFieldName().replaceFirst("[iI]d$", ""));
                             entity.getColumns().set(j, keyColumn);
                         } else {
                             //primary key
-                            if (column.getCamelCaseFieldName() != null && column.getCamelCaseFieldName().equalsIgnoreCase(keyColumn.getCamelCaseFieldName())) {
+                            if (Objects.equals(column.getCamelCaseFieldName(), keyColumn.getCamelCaseFieldName())){
                                 entity.getColumns().set(j, keyColumn);
                             }
                         }
