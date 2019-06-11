@@ -6,28 +6,24 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class App {
-    private static String PACKAGE;
-    private static String SRC_FOLDER;
-    private static String FILE_NAME;
-
-    private void writeTemplates(ArrayList<Table> tables) {
+public class Main {
+    private void writeTemplates(ArrayList<Entity> entities) {
         Templates templates = new Templates();
-        for (Table entityName : tables) {
-            String entityTemplate = templates.getEntityTemplate(entityName, PACKAGE);
+        for (Entity entityName : entities) {
+            String entityTemplate = templates.getEntityTemplate(entityName, EntityToRESTResource.PACKAGE);
             createFile("entity", entityName.getEntityName() + ".java", entityTemplate);
 
-            String serviceTemplate = templates.getResourceTemplate(PACKAGE, entityName.getEntityName());
+            String serviceTemplate = templates.getResourceTemplate(EntityToRESTResource.PACKAGE, entityName.getEntityName());
             createFile("rest", entityName.getEntityName() + "Resource.java", serviceTemplate);
 
-            String daoTemplate = templates.getDaoTemplate(PACKAGE, entityName.getEntityName());
+            String daoTemplate = templates.getDaoTemplate(EntityToRESTResource.PACKAGE, entityName.getEntityName());
             createFile("dao", entityName.getEntityName() + "Dao.java", daoTemplate);
 
-            String repositoryTemplate = templates.getRepositoryTemplate(PACKAGE, entityName.getEntityName());
+            String repositoryTemplate = templates.getRepositoryTemplate(EntityToRESTResource.PACKAGE, entityName.getEntityName());
             createFile("repository", entityName.getEntityName() + "Repository.java", repositoryTemplate);
         }
 
-        String constantsTemplate = templates.getConstantsTemplate(PACKAGE, null);
+        String constantsTemplate = templates.getConstantsTemplate(EntityToRESTResource.PACKAGE, null);
         createFile("utils", "GlobalConstants.java", constantsTemplate);
     }
 
@@ -36,7 +32,7 @@ public class App {
 
         try {
 
-            String path = SRC_FOLDER + PACKAGE + "/" + folderName;
+            String path = EntityToRESTResource.SRC_FOLDER + EntityToRESTResource.PACKAGE + "/" + folderName;
             File file = new File(path);
 
             if (!file.exists()) {
@@ -53,70 +49,70 @@ public class App {
     public static void main(String[] args) {
 
         Configuration configuration = new Configuration(Configuration.readConfig("config.properties"));
-        PACKAGE = configuration.getTargetPackage();
-        SRC_FOLDER = configuration.getSrcFolder();
-        FILE_NAME = configuration.getFileName();
+        EntityToRESTResource.PACKAGE = configuration.getTargetPackage();
+        EntityToRESTResource.SRC_FOLDER = configuration.getSrcFolder();
+        EntityToRESTResource.FILE_NAME = configuration.getFileName();
 
-        ArrayList<Table> tables = new ArrayList<>();
+        ArrayList<Entity> entities = new ArrayList<>();
 
         ArrayList<String> words = new ArrayList<>();
 
-        getWords(words, Objects.requireNonNull(App.class.getClassLoader().getResourceAsStream(FILE_NAME)));
+        getWords(words, Objects.requireNonNull(Main.class.getClassLoader().getResourceAsStream(EntityToRESTResource.FILE_NAME)));
 
-        parseWords(tables, words);
+        parseWords(entities, words);
 
-        App app = new App();
+        Main main = new Main();
 
-        app.writeTemplates(tables);
+        main.writeTemplates(entities);
     }
 
-    private static void parseWords(ArrayList<Table> tables, ArrayList<String> words) {
+    private static void parseWords(ArrayList<Entity> entities, ArrayList<String> words) {
         for (int i = 0; i < words.size(); i++) {
             String word = words.get(i);
             if (word.equalsIgnoreCase("create")) {
                 String nextWord = words.get(i + 1);
                 if (nextWord.equalsIgnoreCase("table")) {
                     String tableWord = words.get(i + 2);
-                    List<String> comps = Arrays.stream(tableWord.replace(Constants.DB_ESCAPE_CHARACTER, "").split("_")).collect(Collectors.toList());
+                    List<String> comps = Arrays.stream(tableWord.replace(EntityToRESTResource.DB_ESCAPE_CHARACTER, "").split(EntityToRESTResource.UNDERSCORE)).collect(Collectors.toList());
                     String entityName = comps.stream().map(w -> w.substring(0, 1).toUpperCase() + w.substring(1).toLowerCase()).collect(Collectors.joining(""));
-                    Table table = new Table();
-                    table.setEntityName(entityName);
-                    table.setTableName(tableWord.replaceAll(Constants.DB_ESCAPE_CHARACTER, ""));
-                    tables.add(table);
+                    Entity entity = new Entity();
+                    entity.setEntityName(entityName);
+                    entity.setTableName(tableWord.replaceAll(EntityToRESTResource.DB_ESCAPE_CHARACTER, ""));
+                    entities.add(entity);
                 }
             }
 
-            Pattern pattern = Pattern.compile(Constants.SUPPORTED_DATA_TYPES_REGEX);
+            Pattern pattern = Pattern.compile(EntityToRESTResource.SUPPORTED_DATA_TYPES_REGEX);
 
             if (pattern.matcher(word).matches()) {
-                String columnName = words.get(i - 1).replaceAll(Constants.DB_ESCAPE_CHARACTER, "");
+                String columnName = words.get(i - 1).replaceAll(EntityToRESTResource.DB_ESCAPE_CHARACTER, "");
                 String datatype = word;
                 String javaType = getJavaType(datatype);
-                List<String> comps = Arrays.stream(columnName.replace(Constants.DB_ESCAPE_CHARACTER, "").split("_")).collect(Collectors.toList());
+                List<String> comps = Arrays.stream(columnName.replace(EntityToRESTResource.DB_ESCAPE_CHARACTER, "").split("_")).collect(Collectors.toList());
                 String camelName = comps.stream().map(w -> w.substring(0, 1).toUpperCase() + w.substring(1).toLowerCase()).collect(Collectors.joining(""));
                 camelName = camelName.substring(0, 1).toLowerCase() + camelName.substring(1);
 
-                tables.get(tables.size() - 1).getColumns().add(new Column(columnName, camelName, datatype, javaType));
+                entities.get(entities.size() - 1).getColumns().add(new ColumnToField(columnName, camelName, datatype, javaType));
             }
 
-            Pattern keyPattern = Pattern.compile(Constants.PRIMARY_FOREIGN_REGEX);
+            Pattern keyPattern = Pattern.compile(EntityToRESTResource.PRIMARY_FOREIGN_REGEX);
             if (keyPattern.matcher(word.toUpperCase()).matches()) {
                 String keyString = words.subList(i, i + 10).stream().collect(Collectors.joining(" "));
-                Column keyColumn = getId(keyString);
-                Table table = tables.get(tables.size() - 1);
-                List<Column> columns = table.getColumns();
+                ColumnToField keyColumn = getId(keyString);
+                Entity entity = entities.get(entities.size() - 1);
+                List<ColumnToField> columns = entity.getColumns();
                 for (int i1 = 0; i1 < columns.size(); i1++) {
-                    Column column = columns.get(i1);
-                    if (column.getIdType() == null) {
+                    ColumnToField column = columns.get(i1);
+                    if (column.getDatabaseIdType() == null) {
 
-                        if (column.getDbName() != null && column.getDbName().equalsIgnoreCase(keyColumn.getDbName())) {
+                        if (column.getDatabaseColumnName() != null && column.getDatabaseColumnName().equalsIgnoreCase(keyColumn.getDatabaseColumnName())) {
                             //foreign key
-                            keyColumn.setCamelName(column.getCamelName());
-                            table.getColumns().set(i1, keyColumn);
+                            keyColumn.setCamelCaseFieldName(column.getCamelCaseFieldName());
+                            entity.getColumns().set(i1, keyColumn);
                         } else {
-                            //primar key
-                            if (column.getCamelName() != null && column.getCamelName().equalsIgnoreCase(keyColumn.getCamelName())) {
-                                table.getColumns().set(i1, keyColumn);
+                            //primary key
+                            if (column.getCamelCaseFieldName() != null && column.getCamelCaseFieldName().equalsIgnoreCase(keyColumn.getCamelCaseFieldName())) {
+                                entity.getColumns().set(i1, keyColumn);
                             }
                         }
                     }
@@ -144,39 +140,39 @@ public class App {
 
     private static String getJavaType(String datatype) {
 
-        Pattern pattern = Pattern.compile(Constants.VARCHAR_REGEX);
+        Pattern pattern = Pattern.compile(EntityToRESTResource.VARCHAR_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "String";
         }
-        pattern = Pattern.compile(Constants.INT_REGEX);
+        pattern = Pattern.compile(EntityToRESTResource.INT_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "Integer";
         }
-        pattern = Pattern.compile(Constants.BIGINT_REGEX);
+        pattern = Pattern.compile(EntityToRESTResource.BIGINT_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "Long";
         }
-        pattern = Pattern.compile(Constants.DATETIME_REGEX);
+        pattern = Pattern.compile(EntityToRESTResource.DATETIME_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "LocalDate";
         }
-        pattern = Pattern.compile(Constants.BIT_REGEX);
+        pattern = Pattern.compile(EntityToRESTResource.BIT_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "String";
         }
-        pattern = Pattern.compile(Constants.FLOAT_REGEX);
+        pattern = Pattern.compile(EntityToRESTResource.FLOAT_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "Float";
         }
-        pattern = Pattern.compile(Constants.DOUBLE_REGEX);
+        pattern = Pattern.compile(EntityToRESTResource.DOUBLE_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "Double";
         }
-        pattern = Pattern.compile(Constants.TIME_REGEX);
+        pattern = Pattern.compile(EntityToRESTResource.TIME_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "LocalTime";
         }
-        pattern = Pattern.compile(Constants.TIMESTAMP_REGEX);
+        pattern = Pattern.compile(EntityToRESTResource.TIMESTAMP_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "LocalDateTime";
         }
@@ -201,30 +197,30 @@ public class App {
         return buffer.toString();
     }
 
-    static Column getId(String key) {
+    static ColumnToField getId(String key) {
         String camelName = null;
         String dbName = null;
         String dataType = null;
         String javaType = null;
         String idType;
-        Pattern pattern = Pattern.compile(Constants.FOREIGN_KEY_REFERENCES_REGEX);
+        Pattern pattern = Pattern.compile(EntityToRESTResource.FOREIGN_KEY_REFERENCES_REGEX);
         Matcher matcher = pattern.matcher(key.toUpperCase());
         if (matcher.find()) {
             String foreignKey = matcher.group(1);
             String otherTableName = matcher.group(2);
             String primaryKeyOtherTable = matcher.group(3);
-            javaType = firstLetterToCaps(camelName(otherTableName.replaceAll(Constants.DB_ESCAPE_CHARACTER, "")));
-            camelName = camelName(foreignKey.replaceAll(Constants.DB_ESCAPE_CHARACTER, ""));
-            dbName = primaryKeyOtherTable.replaceAll(Constants.DB_ESCAPE_CHARACTER, "");
+            javaType = firstLetterToCaps(camelName(otherTableName.replaceAll(EntityToRESTResource.DB_ESCAPE_CHARACTER, "")));
+            camelName = camelName(foreignKey.replaceAll(EntityToRESTResource.DB_ESCAPE_CHARACTER, ""));
+            dbName = primaryKeyOtherTable.replaceAll(EntityToRESTResource.DB_ESCAPE_CHARACTER, "");
         }
-        pattern = Pattern.compile(Constants.PRIMARY_KEY_S_S);
+        pattern = Pattern.compile(EntityToRESTResource.PRIMARY_KEY_S_S);
         matcher = pattern.matcher(key.toUpperCase());
         if (matcher.matches()) {
             idType = "@Id";
-            dbName = matcher.group(1).replaceAll(Constants.DB_ESCAPE_CHARACTER, "");
+            dbName = matcher.group(1).replaceAll(EntityToRESTResource.DB_ESCAPE_CHARACTER, "");
             javaType = "Integer";
         } else
             idType = "@ManyToOne";
-        return new Column(idType, dbName, camelName, dataType, javaType);
+        return new ColumnToField(idType, dbName, camelName, dataType, javaType);
     }
 }

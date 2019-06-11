@@ -59,7 +59,7 @@ public class Templates {
         return result.toString();
     }
 
-    public String getEntityTemplate(Table entity, String mainPackage) {
+    public String getEntityTemplate(Entity entity, String mainPackage) {
         String mainPackageName = mainPackage.replaceAll("/", ".");
         String fileTemplate = getFile("templates/entity.tmpl");
         fileTemplate = fileTemplate.replace("{{mainPackageName}}", mainPackageName);
@@ -67,18 +67,18 @@ public class Templates {
         fileTemplate = fileTemplate.replace("{{tableName}}", entity.getTableName());
 
         StringBuilder stringBuilder = new StringBuilder();
-        for (Column column : entity.getColumns()) {
+        for (ColumnToField column : entity.getColumns()) {
             String indentation = "    ";
-            if (column.getIdType() != null) {
-                stringBuilder.append(indentation).append(column.getIdType()).append("\n");
+            if (column.getDatabaseIdType() != null) {
+                stringBuilder.append(indentation).append(column.getDatabaseIdType()).append("\n");
             }
-            if (column.getIdType() != null && column.getIdType().equalsIgnoreCase("@ManyToOne")) {
-                stringBuilder.append(indentation).append("@JoinColumn(name = \"").append(column.getDbName()).append("\")\n");
+            if (column.getDatabaseIdType() != null && column.getDatabaseIdType().equalsIgnoreCase("@ManyToOne")) {
+                stringBuilder.append(indentation).append("@JoinColumn(name = \"").append(column.getDatabaseColumnName()).append("\")\n");
             } else {
-                stringBuilder.append(indentation).append("@Column(name = \"").append(column.getDbName()).append("\")\n");
+                stringBuilder.append(indentation).append("@Column(name = \"").append(column.getDatabaseColumnName()).append("\")\n");
             }
             String accessModifier = "private";
-            stringBuilder.append(indentation).append(accessModifier).append(" ").append(column.getJavaType()).append(" ").append(column.getCamelName()).append(";\n\n");
+            stringBuilder.append(indentation).append(accessModifier).append(" ").append(column.getJavaType()).append(" ").append(column.getCamelCaseFieldName()).append(";\n\n");
         }
 
         stringBuilder.append("}");

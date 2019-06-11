@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-public class Table {
+public class Entity {
     private String tableName;
     private String entityName;
-    private List<Column> columns = new ArrayList<>();
+    private List<ColumnToField> columns = new ArrayList<>();
 }
