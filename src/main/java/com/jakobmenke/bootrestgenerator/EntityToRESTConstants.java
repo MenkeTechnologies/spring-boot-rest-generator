@@ -1,6 +1,6 @@
 package com.jakobmenke.bootrestgenerator;
 
-public class EntityToRESTResource {
+public class EntityToRESTConstants {
     public static final String DB_ESCAPE_CHARACTER = "`";
     public static final String SUPPORTED_DATA_TYPES_REGEX = "\\b(?i:varchar|tinyint|bigint|int|double|float|time|datetime|timestamp|bit)[()\\d]*";
     public static final String PRIMARY_FOREIGN_REGEX = "^(PRIMARY|FOREIGN)";

@@ -1,9 +1,5 @@
 package com.jakobmenke.bootrestgenerator;
 
-import com.jakobmenke.bootrestgenerator.ColumnToField;
-import com.jakobmenke.bootrestgenerator.Entity;
-import com.jakobmenke.bootrestgenerator.EntityToRESTResource;
-
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,29 +17,29 @@ public class Util {
                 String nextWord = words.get(i + 1);
                 if (nextWord.equalsIgnoreCase("table")) {
                     String tableWord = words.get(i + 2);
-                    List<String> comps = Arrays.stream(tableWord.replace(EntityToRESTResource.DB_ESCAPE_CHARACTER, "").split(EntityToRESTResource.UNDERSCORE)).collect(Collectors.toList());
+                    List<String> comps = Arrays.stream(tableWord.replace(EntityToRESTConstants.DB_ESCAPE_CHARACTER, "").split(EntityToRESTConstants.UNDERSCORE)).collect(Collectors.toList());
                     String entityName = comps.stream().map(w -> w.substring(0, 1).toUpperCase() + w.substring(1).toLowerCase()).collect(Collectors.joining(""));
                     Entity entity = new Entity();
                     entity.setEntityName(entityName);
-                    entity.setTableName(tableWord.replaceAll(EntityToRESTResource.DB_ESCAPE_CHARACTER, ""));
+                    entity.setTableName(tableWord.replaceAll(EntityToRESTConstants.DB_ESCAPE_CHARACTER, ""));
                     entities.add(entity);
                 }
             }
 
-            Pattern pattern = Pattern.compile(EntityToRESTResource.SUPPORTED_DATA_TYPES_REGEX);
+            Pattern pattern = Pattern.compile(EntityToRESTConstants.SUPPORTED_DATA_TYPES_REGEX);
 
             if (pattern.matcher(word).matches()) {
-                String columnName = words.get(i - 1).replaceAll(EntityToRESTResource.DB_ESCAPE_CHARACTER, "");
+                String columnName = words.get(i - 1).replaceAll(EntityToRESTConstants.DB_ESCAPE_CHARACTER, "");
                 String datatype = word;
                 String javaType = getJavaType(datatype);
-                List<String> comps = Arrays.stream(columnName.replace(EntityToRESTResource.DB_ESCAPE_CHARACTER, "").split("_")).collect(Collectors.toList());
+                List<String> comps = Arrays.stream(columnName.replace(EntityToRESTConstants.DB_ESCAPE_CHARACTER, "").split("_")).collect(Collectors.toList());
                 String camelName = comps.stream().map(w -> w.substring(0, 1).toUpperCase() + w.substring(1).toLowerCase()).collect(Collectors.joining(""));
                 camelName = camelName.substring(0, 1).toLowerCase() + camelName.substring(1);
 
                 entities.get(entities.size() - 1).getColumns().add(new ColumnToField(columnName, camelName, datatype, javaType));
             }
 
-            Pattern keyPattern = Pattern.compile(EntityToRESTResource.PRIMARY_FOREIGN_REGEX);
+            Pattern keyPattern = Pattern.compile(EntityToRESTConstants.PRIMARY_FOREIGN_REGEX);
             if (keyPattern.matcher(word.toUpperCase()).matches()) {
                 String keyString = words.subList(i, i + 10).stream().collect(Collectors.joining(" "));
                 ColumnToField keyColumn = getId(keyString);
@@ -88,39 +84,39 @@ public class Util {
 
     private static String getJavaType(String datatype) {
 
-        Pattern pattern = Pattern.compile(EntityToRESTResource.VARCHAR_REGEX);
+        Pattern pattern = Pattern.compile(EntityToRESTConstants.VARCHAR_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "String";
         }
-        pattern = Pattern.compile(EntityToRESTResource.INT_REGEX);
+        pattern = Pattern.compile(EntityToRESTConstants.INT_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "Integer";
         }
-        pattern = Pattern.compile(EntityToRESTResource.BIGINT_REGEX);
+        pattern = Pattern.compile(EntityToRESTConstants.BIGINT_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "Long";
         }
-        pattern = Pattern.compile(EntityToRESTResource.DATETIME_REGEX);
+        pattern = Pattern.compile(EntityToRESTConstants.DATETIME_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "LocalDate";
         }
-        pattern = Pattern.compile(EntityToRESTResource.BIT_REGEX);
+        pattern = Pattern.compile(EntityToRESTConstants.BIT_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "String";
         }
-        pattern = Pattern.compile(EntityToRESTResource.FLOAT_REGEX);
+        pattern = Pattern.compile(EntityToRESTConstants.FLOAT_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "Float";
         }
-        pattern = Pattern.compile(EntityToRESTResource.DOUBLE_REGEX);
+        pattern = Pattern.compile(EntityToRESTConstants.DOUBLE_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "Double";
         }
-        pattern = Pattern.compile(EntityToRESTResource.TIME_REGEX);
+        pattern = Pattern.compile(EntityToRESTConstants.TIME_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "LocalTime";
         }
-        pattern = Pattern.compile(EntityToRESTResource.TIMESTAMP_REGEX);
+        pattern = Pattern.compile(EntityToRESTConstants.TIMESTAMP_REGEX);
         if (pattern.matcher(datatype).matches()) {
             return "LocalDateTime";
         }
@@ -151,21 +147,21 @@ public class Util {
         String dataType = null;
         String javaType = null;
         String idType;
-        Pattern pattern = Pattern.compile(EntityToRESTResource.FOREIGN_KEY_REFERENCES_REGEX);
+        Pattern pattern = Pattern.compile(EntityToRESTConstants.FOREIGN_KEY_REFERENCES_REGEX);
         Matcher matcher = pattern.matcher(key.toUpperCase());
         if (matcher.find()) {
             String foreignKey = matcher.group(1);
             String otherTableName = matcher.group(2);
             String primaryKeyOtherTable = matcher.group(3);
-            javaType = firstLetterToCaps(camelName(otherTableName.replaceAll(EntityToRESTResource.DB_ESCAPE_CHARACTER, "")));
-            camelName = camelName(foreignKey.replaceAll(EntityToRESTResource.DB_ESCAPE_CHARACTER, ""));
-            dbName = primaryKeyOtherTable.replaceAll(EntityToRESTResource.DB_ESCAPE_CHARACTER, "");
+            javaType = firstLetterToCaps(camelName(otherTableName.replaceAll(EntityToRESTConstants.DB_ESCAPE_CHARACTER, "")));
+            camelName = camelName(foreignKey.replaceAll(EntityToRESTConstants.DB_ESCAPE_CHARACTER, ""));
+            dbName = primaryKeyOtherTable.replaceAll(EntityToRESTConstants.DB_ESCAPE_CHARACTER, "");
         }
-        pattern = Pattern.compile(EntityToRESTResource.PRIMARY_KEY_S_S);
+        pattern = Pattern.compile(EntityToRESTConstants.PRIMARY_KEY_S_S);
         matcher = pattern.matcher(key.toUpperCase());
         if (matcher.matches()) {
             idType = "@Id";
-            dbName = matcher.group(1).replaceAll(EntityToRESTResource.DB_ESCAPE_CHARACTER, "");
+            dbName = matcher.group(1).replaceAll(EntityToRESTConstants.DB_ESCAPE_CHARACTER, "");
             javaType = "Integer";
         } else
             idType = "@ManyToOne";

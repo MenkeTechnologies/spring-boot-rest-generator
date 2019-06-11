@@ -7,20 +7,20 @@ public class Main {
     private void writeTemplates(ArrayList<Entity> entities) {
         Templates templates = new Templates();
         for (Entity entityName : entities) {
-            String entityTemplate = templates.getEntityTemplate(entityName, EntityToRESTResource.PACKAGE);
+            String entityTemplate = templates.getEntityTemplate(entityName, EntityToRESTConstants.PACKAGE);
             createFile("entity", entityName.getEntityName() + ".java", entityTemplate);
 
-            String serviceTemplate = templates.getResourceTemplate(EntityToRESTResource.PACKAGE, entityName.getEntityName());
+            String serviceTemplate = templates.getResourceTemplate(EntityToRESTConstants.PACKAGE, entityName.getEntityName());
             createFile("rest", entityName.getEntityName() + "Resource.java", serviceTemplate);
 
-            String daoTemplate = templates.getDaoTemplate(EntityToRESTResource.PACKAGE, entityName.getEntityName());
+            String daoTemplate = templates.getDaoTemplate(EntityToRESTConstants.PACKAGE, entityName.getEntityName());
             createFile("dao", entityName.getEntityName() + "Dao.java", daoTemplate);
 
-            String repositoryTemplate = templates.getRepositoryTemplate(EntityToRESTResource.PACKAGE, entityName.getEntityName());
+            String repositoryTemplate = templates.getRepositoryTemplate(EntityToRESTConstants.PACKAGE, entityName.getEntityName());
             createFile("repository", entityName.getEntityName() + "Repository.java", repositoryTemplate);
         }
 
-        String constantsTemplate = templates.getConstantsTemplate(EntityToRESTResource.PACKAGE, null);
+        String constantsTemplate = templates.getConstantsTemplate(EntityToRESTConstants.PACKAGE, null);
         createFile("utils", "GlobalConstants.java", constantsTemplate);
     }
 
@@ -29,7 +29,7 @@ public class Main {
 
         try {
 
-            String path = EntityToRESTResource.SRC_FOLDER + EntityToRESTResource.PACKAGE + "/" + folderName;
+            String path = EntityToRESTConstants.SRC_FOLDER + EntityToRESTConstants.PACKAGE + "/" + folderName;
             File file = new File(path);
 
             if (!file.exists()) {
@@ -46,15 +46,15 @@ public class Main {
     public static void main(String[] args) {
 
         Configuration configuration = new Configuration(Configuration.readConfig("config.properties"));
-        EntityToRESTResource.PACKAGE = configuration.getTargetPackage();
-        EntityToRESTResource.SRC_FOLDER = configuration.getSrcFolder();
-        EntityToRESTResource.FILE_NAME = configuration.getFileName();
+        EntityToRESTConstants.PACKAGE = configuration.getTargetPackage();
+        EntityToRESTConstants.SRC_FOLDER = configuration.getSrcFolder();
+        EntityToRESTConstants.FILE_NAME = configuration.getFileName();
 
         ArrayList<Entity> entities = new ArrayList<>();
 
         ArrayList<String> words = new ArrayList<>();
 
-        Util.getWords(words, Objects.requireNonNull(Main.class.getClassLoader().getResourceAsStream(EntityToRESTResource.FILE_NAME)));
+        Util.getWords(words, Objects.requireNonNull(Main.class.getClassLoader().getResourceAsStream(EntityToRESTConstants.FILE_NAME)));
 
         Util.parseWords(entities, words);
 
