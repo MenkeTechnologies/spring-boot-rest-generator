@@ -1,7 +1,11 @@
 package com.jakobmenke.bootrestgenerator;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Objects;
 
 public class Main {
     private void writeTemplates(ArrayList<Entity> entities) {
@@ -20,8 +24,10 @@ public class Main {
             createFile("repository", entityName.getEntityName() + "Repository.java", repositoryTemplate);
         }
 
-        String constantsTemplate = templates.getConstantsTemplate(EntityToRESTConstants.PACKAGE, null);
+        String constantsTemplate = templates.getFileTemplateByName(EntityToRESTConstants.PACKAGE, "constants");
         createFile("utils", "GlobalConstants.java", constantsTemplate);
+        String daotemplate = templates.getFileTemplateByName(EntityToRESTConstants.PACKAGE, "genericdao");
+        createFile("dao", "GenericDao.java", daotemplate);
     }
 
     private void createFile(String folderName, String fileName, String fileTemplate) {

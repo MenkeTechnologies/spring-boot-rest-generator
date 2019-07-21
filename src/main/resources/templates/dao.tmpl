@@ -12,7 +12,7 @@ import {{mainPackageName}}.repository.{{entityName}}Repository;
 
 @Service
 @Transactional
-public class {{entityName}}Dao {
+public class {{entityName}}Dao implements GenericDao<{{entityName}}>{
 
     @Autowired
     {{entityName}}Repository {{camelRepositoryName}};

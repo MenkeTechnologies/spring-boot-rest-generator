@@ -27,9 +27,9 @@ public class Templates {
         return fileTemplate;
     }
 
-    public String getConstantsTemplate(String mainPackage, String entityName) {
+    public String getFileTemplateByName(String mainPackage, String fileName) {
         String mainPackageName = mainPackage.replaceAll("/", ".");
-        String fileTemplate = getFile("templates/constants.tmpl");
+        String fileTemplate = getFile("templates/" + fileName + ".tmpl");
         fileTemplate = fileTemplate.replace("{{mainPackageName}}", mainPackageName);
 
         return fileTemplate;
