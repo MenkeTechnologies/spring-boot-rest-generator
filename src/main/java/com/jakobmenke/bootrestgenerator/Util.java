@@ -36,26 +36,25 @@ public class Util {
                 entities.get(entities.size() - 1).getColumns().add(new ColumnToField(columnName, camelName, datatype, javaType));
             }
 
-            Pattern keyPattern = Pattern.compile(EntityToRESTConstants.PRIMARY_FOREIGN_REGEX);
-            if (keyPattern.matcher(word.toUpperCase()).matches()) {
-                String keyString = words.subList(i, i + 10).stream().collect(Collectors.joining(" "));
-                ColumnToField keyColumn = getId(keyString);
-                Entity entity = entities.get(entities.size() - 1);
-                List<ColumnToField> columns = entity.getColumns();
-                for (int j = 0; j < columns.size(); j++) {
-                    ColumnToField column = columns.get(j);
-                    if (column.getDatabaseIdType() == null) {
+            setPKorFKColumns(entities, words, i, word);
+        }
+    }
 
-                        if(Objects.equals(column.getDatabaseColumnName(), keyColumn.getDatabaseColumnName())){
-                            //foreign key
-                            keyColumn.setCamelCaseFieldName(column.getCamelCaseFieldName().replaceFirst("[iI]d$", ""));
-                            entity.getColumns().set(j, keyColumn);
-                        } else {
-                            //primary key
-                            if (Objects.equals(column.getCamelCaseFieldName(), keyColumn.getCamelCaseFieldName())){
-                                entity.getColumns().set(j, keyColumn);
-                            }
-                        }
+    private static void setPKorFKColumns(ArrayList<Entity> entities, ArrayList<String> words, int i, String word) {
+        Pattern keyPattern = Pattern.compile(EntityToRESTConstants.PRIMARY_FOREIGN_REGEX);
+        if (keyPattern.matcher(word.toUpperCase()).matches()) {
+            String keyString = words.subList(i, i + 10).stream().collect(Collectors.joining(" "));
+            ColumnToField keyColumn = getId(keyString);
+            Entity entity = entities.get(entities.size() - 1);
+            List<ColumnToField> columns = entity.getColumns();
+            for (int j = 0; j < columns.size(); j++) {
+                ColumnToField column = columns.get(j);
+                if (column.getDatabaseIdType() == null) {
+
+                    if (Objects.equals(column.getDatabaseColumnName(), keyColumn.getDatabaseColumnName())) {
+                        //primary or foreign key
+                        keyColumn.setCamelCaseFieldName(column.getCamelCaseFieldName().replaceFirst("[iI]d$", ""));
+                        entity.getColumns().set(j, keyColumn);
                     }
                 }
             }
@@ -125,7 +124,7 @@ public class Util {
     public static String firstLetterToCaps(String string) {
         if (string.length() == 0)
             return "";
-        return string.toUpperCase().substring(0, 1) + string.substring(1);
+        return string.toUpperCase().charAt(0) + string.substring(1);
     }
 
     public static String camelName(String string) {
@@ -157,11 +156,13 @@ public class Util {
         pattern = Pattern.compile(EntityToRESTConstants.PRIMARY_KEY_S_S);
         matcher = pattern.matcher(key.toUpperCase());
         if (matcher.matches()) {
-            idType = "@Id";
+            idType = EntityToRESTConstants.PK_ID;
             dbName = matcher.group(1).replaceAll(EntityToRESTConstants.DB_ESCAPE_CHARACTER, "");
-            javaType = "Integer";
-        } else
-            idType = "@ManyToOne";
+            javaType = EntityToRESTConstants.PK_DATA_TYPE;
+        } else {
+            idType = EntityToRESTConstants.FK_ID;
+            javaType = EntityToRESTConstants.FK_DATA_TYPE;
+        }
         return new ColumnToField(idType, dbName, camelName, dataType, javaType);
     }
 }

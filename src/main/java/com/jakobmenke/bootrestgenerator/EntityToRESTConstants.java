@@ -17,6 +17,10 @@ public class EntityToRESTConstants {
     public static final String PRIMARY_KEY_S_S = "^PRIMARY KEY\\s*\\((\\S+)\\).*";
     public static final String UNDERSCORE = "_";
     public static final String SPACE_CHAR = " ";
+    public static final String PK_DATA_TYPE = "Long";
+    public static final String FK_DATA_TYPE = "Integer";
+    public static final String PK_ID = "@Id";
+    public static final String FK_ID = "@ManyToOne";
     static String PACKAGE;
     static String SRC_FOLDER;
     static String FILE_NAME;

@@ -40,6 +40,7 @@ public class Templates {
         String fileTemplate = getFile("templates/repository.tmpl");
         fileTemplate = fileTemplate.replace("{{mainPackageName}}", mainPackageName);
         fileTemplate = fileTemplate.replace("{{entityName}}", entityName);
+        fileTemplate = fileTemplate.replace("{{primaryKeyType}}", EntityToRESTConstants.PK_DATA_TYPE);
 
         return fileTemplate;
     }

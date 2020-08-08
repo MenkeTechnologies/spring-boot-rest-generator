@@ -8,6 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import {{mainPackageName}}.entity.{{entityName}};
 
 @Repository
-public interface {{entityName}}Repository extends JpaRepository<{{entityName}}, Long> {
+public interface {{entityName}}Repository extends JpaRepository<{{entityName}}, {{primaryKeyType}}> {
 
 }
