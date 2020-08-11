@@ -33,7 +33,7 @@ public class Main {
         String constantsTemplate = templates.getFileTemplateByName(Globals.PACKAGE, "constants");
         createFile("utils", "GlobalConstants.java", constantsTemplate);
         String daotemplate = templates.getFileTemplateByName(Globals.PACKAGE, "genericdao");
-        createFile("dao", "GenericDao.java", daotemplate);
+       createFile("dao", "GenericDao.java", daotemplate);
     }
 
     private void createFile(String folderName, String fileName, String fileTemplate) {
@@ -46,6 +46,9 @@ public class Main {
 
             if (!file.exists()) {
                 boolean mkdirStatus = file.mkdir();
+                if (!mkdirStatus) {
+                    System.err.println(new StringBuilder().append("\n_____________Class:").append(Thread.currentThread().getStackTrace()[1].getClassName()).append("____Method:").append(Thread.currentThread().getStackTrace()[1].getMethodName()).append("___Line:").append(Thread.currentThread().getStackTrace()[1].getLineNumber()).append("____\n_____________mkdirStatus = ").append(mkdirStatus).append("_____________\n").toString());
+                }
             }
             writer = new PrintWriter(path + "/" + fileName, "UTF-8");
             writer.print(fileTemplate);
