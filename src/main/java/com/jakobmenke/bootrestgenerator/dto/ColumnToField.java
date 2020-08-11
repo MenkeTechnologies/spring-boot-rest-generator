@@ -1,4 +1,4 @@
-package com.jakobmenke.bootrestgenerator;
+package com.jakobmenke.bootrestgenerator.dto;
 
 import lombok.Builder;
 import lombok.Data;

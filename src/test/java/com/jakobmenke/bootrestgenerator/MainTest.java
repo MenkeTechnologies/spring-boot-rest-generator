@@ -1,5 +1,7 @@
 package com.jakobmenke.bootrestgenerator;
 
+import com.jakobmenke.bootrestgenerator.dto.ColumnToField;
+import com.jakobmenke.bootrestgenerator.utils.Util;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

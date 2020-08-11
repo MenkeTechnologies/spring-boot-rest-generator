@@ -1,10 +1,12 @@
 package com.jakobmenke.bootrestgenerator;
 
+import com.jakobmenke.bootrestgenerator.utils.Configuration;
 import org.junit.jupiter.api.Test;
 
 import java.util.Properties;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class ConfigurationTest {
 

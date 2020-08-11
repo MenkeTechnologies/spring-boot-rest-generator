@@ -1,5 +1,11 @@
 package com.jakobmenke.bootrestgenerator;
 
+import com.jakobmenke.bootrestgenerator.dto.Entity;
+import com.jakobmenke.bootrestgenerator.templates.Templates;
+import com.jakobmenke.bootrestgenerator.utils.Configuration;
+import com.jakobmenke.bootrestgenerator.utils.Globals;
+import com.jakobmenke.bootrestgenerator.utils.Util;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -11,22 +17,22 @@ public class Main {
     private void writeTemplates(ArrayList<Entity> entities) {
         Templates templates = new Templates();
         for (Entity entityName : entities) {
-            String entityTemplate = templates.getEntityTemplate(entityName, EntityToRESTConstants.PACKAGE);
+            String entityTemplate = templates.getEntityTemplate(entityName, Globals.PACKAGE);
             createFile("entity", entityName.getEntityName() + ".java", entityTemplate);
 
-            String serviceTemplate = templates.getResourceTemplate(EntityToRESTConstants.PACKAGE, entityName.getEntityName());
+            String serviceTemplate = templates.getResourceTemplate(Globals.PACKAGE, entityName.getEntityName());
             createFile("rest", entityName.getEntityName() + "Resource.java", serviceTemplate);
 
-            String daoTemplate = templates.getDaoTemplate(EntityToRESTConstants.PACKAGE, entityName.getEntityName());
+            String daoTemplate = templates.getDaoTemplate(Globals.PACKAGE, entityName.getEntityName());
             createFile("dao", entityName.getEntityName() + "Dao.java", daoTemplate);
 
-            String repositoryTemplate = templates.getRepositoryTemplate(EntityToRESTConstants.PACKAGE, entityName.getEntityName());
+            String repositoryTemplate = templates.getRepositoryTemplate(Globals.PACKAGE, entityName.getEntityName());
             createFile("repository", entityName.getEntityName() + "Repository.java", repositoryTemplate);
         }
 
-        String constantsTemplate = templates.getFileTemplateByName(EntityToRESTConstants.PACKAGE, "constants");
+        String constantsTemplate = templates.getFileTemplateByName(Globals.PACKAGE, "constants");
         createFile("utils", "GlobalConstants.java", constantsTemplate);
-        String daotemplate = templates.getFileTemplateByName(EntityToRESTConstants.PACKAGE, "genericdao");
+        String daotemplate = templates.getFileTemplateByName(Globals.PACKAGE, "genericdao");
         createFile("dao", "GenericDao.java", daotemplate);
     }
 
@@ -35,7 +41,7 @@ public class Main {
 
         try {
 
-            String path = EntityToRESTConstants.SRC_FOLDER + EntityToRESTConstants.PACKAGE + "/" + folderName;
+            String path = Globals.SRC_FOLDER + Globals.PACKAGE + "/" + folderName;
             File file = new File(path);
 
             if (!file.exists()) {
@@ -51,16 +57,16 @@ public class Main {
 
     public static void main(String[] args) {
 
-        Configuration configuration = new Configuration(Configuration.readConfig("config.properties"));
-        EntityToRESTConstants.PACKAGE = configuration.getTargetPackage();
-        EntityToRESTConstants.SRC_FOLDER = configuration.getSrcFolder();
-        EntityToRESTConstants.FILE_NAME = configuration.getFileName();
+        Configuration configuration = new Configuration(Objects.requireNonNull(Configuration.readConfig("config.properties")));
+        Globals.PACKAGE = configuration.getTargetPackage();
+        Globals.SRC_FOLDER = configuration.getSrcFolder();
+        Globals.FILE_NAME = configuration.getFileName();
 
         ArrayList<Entity> entities = new ArrayList<>();
 
         ArrayList<String> words = new ArrayList<>();
 
-        Util.getWords(words, Objects.requireNonNull(Main.class.getClassLoader().getResourceAsStream(EntityToRESTConstants.FILE_NAME)));
+        Util.getWords(words, Objects.requireNonNull(Main.class.getClassLoader().getResourceAsStream(Globals.FILE_NAME)));
 
         Util.parseWords(entities, words);
 

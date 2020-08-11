@@ -1,4 +1,8 @@
-package com.jakobmenke.bootrestgenerator;
+package com.jakobmenke.bootrestgenerator.templates;
+
+import com.jakobmenke.bootrestgenerator.dto.ColumnToField;
+import com.jakobmenke.bootrestgenerator.dto.Entity;
+import com.jakobmenke.bootrestgenerator.utils.EntityToRESTConstants;
 
 import java.io.InputStream;
 import java.util.Objects;
