@@ -41,13 +41,13 @@ public class Main {
 
         try {
 
-            String path = Globals.SRC_FOLDER + Globals.PACKAGE + "/" + folderName;
+            String path = Globals.SRC_FOLDER + File.separator + Globals.PACKAGE + File.separator + folderName;
             File file = new File(path);
 
             if (!file.exists()) {
-                boolean mkdirStatus = file.mkdir();
+                boolean mkdirStatus = file.mkdirs();
                 if (!mkdirStatus) {
-                    System.err.println(new StringBuilder().append("\n_____________Class:").append(Thread.currentThread().getStackTrace()[1].getClassName()).append("____Method:").append(Thread.currentThread().getStackTrace()[1].getMethodName()).append("___Line:").append(Thread.currentThread().getStackTrace()[1].getLineNumber()).append("____\n_____________mkdirStatus = ").append(mkdirStatus).append("_____________\n").toString());
+                    System.err.println(new StringBuilder().append("\n_____________Class:").append(Thread.currentThread().getStackTrace()[1].getClassName()).append("____Method:").append(Thread.currentThread().getStackTrace()[1].getMethodName()).append("___Line:").append(Thread.currentThread().getStackTrace()[1].getLineNumber()).append("____\n_____________mkdirStatus = ").append(mkdirStatus).append("_____________\n"));
                 }
             }
             writer = new PrintWriter(path + "/" + fileName, "UTF-8");

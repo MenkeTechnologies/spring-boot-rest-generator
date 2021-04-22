@@ -147,7 +147,7 @@ public class Util {
         String javaType = null;
         String idType;
         Pattern pattern = Pattern.compile(EntityToRESTConstants.FOREIGN_KEY_REFERENCES_REGEX);
-        Matcher matcher = pattern.matcher(key.toUpperCase());
+        Matcher matcher = pattern.matcher(key);
         if (matcher.find()) {
             String foreignKey = matcher.group(1);
             String otherTableName = matcher.group(2);
@@ -157,7 +157,7 @@ public class Util {
             dbName = primaryKeyOtherTable.replaceAll(EntityToRESTConstants.DB_ESCAPE_CHARACTER, "");
         }
         pattern = Pattern.compile(EntityToRESTConstants.PRIMARY_KEY_S_S);
-        matcher = pattern.matcher(key.toUpperCase());
+        matcher = pattern.matcher(key);
         if (matcher.matches()) {
             idType = EntityToRESTConstants.PK_ID;
             dbName = matcher.group(1).replaceAll(EntityToRESTConstants.DB_ESCAPE_CHARACTER, "");
