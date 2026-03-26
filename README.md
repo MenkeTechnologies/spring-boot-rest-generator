@@ -65,7 +65,10 @@ Edit `src/main/resources/config.properties`:
 target.folder=/absolute/path/to/your/project/src/main/java/
 target.package=com/your/package
 file.name=dump.sql
+target.language=kotlin
 ```
+
+Set `target.language` to `java` or `kotlin` to control the generated output language. Default is `kotlin`.
 
 ### 2. Drop your SQL
 
@@ -77,7 +80,7 @@ Place your MySQL DDL dump file in `src/main/resources/`.
 ./gradlew run
 ```
 
-Or run `Main.main()` from your IDE. Watch the grid light up.
+Or run `Main.kt` from your IDE. Watch the grid light up.
 
 ---
 
@@ -185,6 +188,14 @@ src/main/resources/templates/
  |-- genericdao.tmpl                  Generic DAO interface
  |-- constants.tmpl                   Global constants
  \-- restrepository.tmpl              Alternative REST template
+```
+
+---
+
+## `> RUNNING TESTS`
+
+```bash
+./gradlew test
 ```
 
 ---

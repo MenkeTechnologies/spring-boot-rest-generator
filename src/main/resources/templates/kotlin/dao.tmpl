@@ -1,0 +1,23 @@
+package {{mainPackageName}}.dao
+
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import {{mainPackageName}}.entity.{{entityName}}
+import {{mainPackageName}}.repository.{{entityName}}Repository
+
+@Service
+@Transactional
+class {{entityName}}Dao(private val {{camelRepositoryName}}: {{entityName}}Repository) : GenericDao<{{entityName}}> {
+
+    override fun findAll(): List<{{entityName}}> = {{camelRepositoryName}}.findAll()
+
+    override fun findOne(id: Long): {{entityName}}? = {{camelRepositoryName}}.findById(id).orElse(null)
+
+    override fun save(entity: {{entityName}}): {{entityName}} = {{camelRepositoryName}}.save(entity)
+
+    override fun delete(id: Long) = {{camelRepositoryName}}.deleteById(id)
+
+    override fun delete(entity: {{entityName}}) = {{camelRepositoryName}}.delete(entity)
+
+    override fun deleteAll(entityList: List<{{entityName}}>) = {{camelRepositoryName}}.deleteAll()
+}

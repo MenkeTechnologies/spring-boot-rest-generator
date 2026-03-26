@@ -13,6 +13,7 @@ fun main() {
     Globals.PACKAGE = configuration.targetPackage
     Globals.SRC_FOLDER = configuration.srcFolder
     Globals.FILE_NAME = configuration.fileName
+    Globals.LANGUAGE = configuration.language
 
     val entities = mutableListOf<Entity>()
     val words = mutableListOf<String>()
@@ -27,25 +28,26 @@ fun main() {
 class Main {
     fun writeTemplates(entities: List<Entity>) {
         val templates = Templates()
+        val ext = Globals.fileExtension
         for (entity in entities) {
             val entityTemplate = templates.getEntityTemplate(entity, Globals.PACKAGE)
-            createFile("entity", "${entity.entityName}.java", entityTemplate)
+            createFile("entity", "${entity.entityName}$ext", entityTemplate)
 
             val serviceTemplate = templates.getResourceTemplate(Globals.PACKAGE, entity.entityName)
-            createFile("rest", "${entity.entityName}Resource.java", serviceTemplate)
+            createFile("rest", "${entity.entityName}Resource$ext", serviceTemplate)
 
             val daoTemplate = templates.getDaoTemplate(Globals.PACKAGE, entity.entityName)
-            createFile("dao", "${entity.entityName}Dao.java", daoTemplate)
+            createFile("dao", "${entity.entityName}Dao$ext", daoTemplate)
 
             val repositoryTemplate = templates.getRepositoryTemplate(Globals.PACKAGE, entity.entityName)
-            createFile("repository", "${entity.entityName}Repository.java", repositoryTemplate)
+            createFile("repository", "${entity.entityName}Repository$ext", repositoryTemplate)
         }
 
         val constantsTemplate = templates.getFileTemplateByName(Globals.PACKAGE, "constants")
-        createFile("utils", "GlobalConstants.java", constantsTemplate)
+        createFile("utils", "GlobalConstants$ext", constantsTemplate)
 
         val daoTemplate = templates.getFileTemplateByName(Globals.PACKAGE, "genericdao")
-        createFile("dao", "GenericDao.java", daoTemplate)
+        createFile("dao", "GenericDao$ext", daoTemplate)
     }
 
     private fun createFile(folderName: String, fileName: String, fileTemplate: String) {

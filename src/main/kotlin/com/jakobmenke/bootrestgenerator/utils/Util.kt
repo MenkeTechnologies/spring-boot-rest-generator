@@ -79,12 +79,13 @@ object Util {
     }
 
     private fun getJavaType(datatype: String): String {
+        val isKotlin = Globals.isKotlin
         return when {
             Pattern.compile(EntityToRESTConstants.VARCHAR_REGEX).matcher(datatype).matches() -> "String"
-            Pattern.compile(EntityToRESTConstants.INT_REGEX).matcher(datatype).matches() -> "Integer"
+            Pattern.compile(EntityToRESTConstants.INT_REGEX).matcher(datatype).matches() -> if (isKotlin) "Int" else "Integer"
             Pattern.compile(EntityToRESTConstants.BIGINT_REGEX).matcher(datatype).matches() -> "Long"
             Pattern.compile(EntityToRESTConstants.DATETIME_REGEX).matcher(datatype).matches() -> "LocalDate"
-            Pattern.compile(EntityToRESTConstants.BIT_REGEX).matcher(datatype).matches() -> "String"
+            Pattern.compile(EntityToRESTConstants.BIT_REGEX).matcher(datatype).matches() -> if (isKotlin) "Boolean" else "String"
             Pattern.compile(EntityToRESTConstants.FLOAT_REGEX).matcher(datatype).matches() -> "Float"
             Pattern.compile(EntityToRESTConstants.DOUBLE_REGEX).matcher(datatype).matches() -> "Double"
             Pattern.compile(EntityToRESTConstants.TIME_REGEX).matcher(datatype).matches() -> "LocalTime"
@@ -136,7 +137,7 @@ object Util {
             javaType = EntityToRESTConstants.PK_DATA_TYPE
         } else {
             idType = EntityToRESTConstants.FK_ID
-            javaType = EntityToRESTConstants.FK_DATA_TYPE
+            javaType = if (Globals.isKotlin) "Int" else EntityToRESTConstants.FK_DATA_TYPE
         }
 
         return ColumnToField(

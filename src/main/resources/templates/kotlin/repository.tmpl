@@ -1,0 +1,8 @@
+package {{mainPackageName}}.repository
+
+import org.springframework.stereotype.Repository
+import org.springframework.data.jpa.repository.JpaRepository
+import {{mainPackageName}}.entity.{{entityName}}
+
+@Repository
+interface {{entityName}}Repository : JpaRepository<{{entityName}}, {{primaryKeyType}}>

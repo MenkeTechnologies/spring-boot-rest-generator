@@ -6,12 +6,14 @@ import java.util.Properties
 data class Configuration(
     val srcFolder: String,
     val targetPackage: String,
-    val fileName: String
+    val fileName: String,
+    val language: String = "kotlin"
 ) {
     constructor(props: Properties) : this(
         srcFolder = props.getProperty("target.folder"),
         targetPackage = props.getProperty("target.package"),
-        fileName = props.getProperty("file.name")
+        fileName = props.getProperty("file.name"),
+        language = props.getProperty("target.language", "kotlin")
     )
 
     companion object {

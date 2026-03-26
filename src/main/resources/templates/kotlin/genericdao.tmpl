@@ -1,0 +1,10 @@
+package {{mainPackageName}}.dao
+
+interface GenericDao<T> {
+    fun findAll(): List<T>
+    fun findOne(id: Long): T?
+    fun save(entity: T): T
+    fun delete(id: Long)
+    fun delete(entity: T)
+    fun deleteAll(list: List<T>)
+}

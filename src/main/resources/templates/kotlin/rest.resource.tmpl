@@ -1,0 +1,35 @@
+package {{mainPackageName}}.rest
+
+import org.springframework.web.bind.annotation.*
+import {{mainPackageName}}.entity.{{entityName}}
+import {{mainPackageName}}.dao.{{entityName}}Dao
+import {{mainPackageName}}.utils.GlobalConstants
+
+@RestController
+@RequestMapping({{restServicePrefix}} + "/{{serviceName}}")
+class {{entityName}}Resource(private val dao: {{entityName}}Dao) {
+
+    @GetMapping
+    fun readAll(): List<{{entityName}}> = dao.findAll()
+
+    @GetMapping("/{id}")
+    fun read(@PathVariable("id") id: Long): {{entityName}}? = dao.findOne(id)
+
+    @PostMapping
+    fun create(@RequestBody entity: {{entityName}}): {{entityName}} = dao.save(entity)
+
+    @PutMapping
+    fun update(@RequestBody entity: {{entityName}}): {{entityName}} = dao.save(entity)
+
+    @DeleteMapping("/{id}")
+    fun delete(@PathVariable("id") id: Long): Boolean {
+        dao.delete(id)
+        return true
+    }
+
+    @DeleteMapping
+    fun deleteAll(@RequestBody entityList: List<{{entityName}}>): Boolean {
+        dao.deleteAll(entityList)
+        return true
+    }
+}
