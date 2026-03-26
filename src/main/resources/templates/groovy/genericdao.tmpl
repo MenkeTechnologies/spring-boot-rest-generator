@@ -1,0 +1,15 @@
+package {{mainPackageName}}.dao
+
+interface GenericDao<T> {
+    List<T> findAll()
+
+    T findOne(Long id)
+
+    T save(T t)
+
+    void delete(Long id)
+
+    void delete(T t)
+
+    void deleteAll(List<T> list)
+}

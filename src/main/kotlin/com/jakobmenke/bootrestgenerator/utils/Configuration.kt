@@ -22,6 +22,7 @@ data class Configuration(
     companion object {
         fun defaultFolderForLanguage(language: String): String = when (language) {
             "kotlin" -> "build/generated/src/main/kotlin/"
+            "groovy" -> "build/generated/src/main/groovy/"
             else -> "build/generated/src/main/java/"
         }
 

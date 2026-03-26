@@ -7,7 +7,11 @@ import java.util.Scanner
 
 class Templates {
     private val templateDir: String
-        get() = if (Globals.isKotlin) "templates/kotlin" else "templates"
+        get() = when {
+            Globals.isKotlin -> "templates/kotlin"
+            Globals.isGroovy -> "templates/groovy"
+            else -> "templates"
+        }
 
     fun getResourceTemplate(mainPackage: String, entityName: String): String {
         val mainPackageName = mainPackage.replace("/", ".")
@@ -60,10 +64,10 @@ class Templates {
             .replace("{{tableName}}", entity.tableName)
 
         val sb = StringBuilder()
-        if (Globals.isKotlin) {
-            buildKotlinEntityFields(sb, entity)
-        } else {
-            buildJavaEntityFields(sb, entity)
+        when {
+            Globals.isKotlin -> buildKotlinEntityFields(sb, entity)
+            Globals.isGroovy -> buildGroovyEntityFields(sb, entity)
+            else -> buildJavaEntityFields(sb, entity)
         }
         sb.append("}")
 
@@ -82,6 +86,21 @@ class Templates {
                 sb.append(indentation).append("@Column(name = \"").append(column.databaseColumnName).append("\")\n")
             }
             sb.append(indentation).append("private ").append(column.javaType).append(" ").append(column.camelCaseFieldName).append(";\n\n")
+        }
+    }
+
+    private fun buildGroovyEntityFields(sb: StringBuilder, entity: Entity) {
+        for (column in entity.columns) {
+            val indentation = "    "
+            if (column.databaseIdType != null) {
+                sb.append(indentation).append(column.databaseIdType).append("\n")
+            }
+            if (column.databaseIdType != null && column.databaseIdType.equals("@ManyToOne", ignoreCase = true)) {
+                sb.append(indentation).append("@JoinColumn(name = \"").append(column.databaseColumnName).append("\")\n")
+            } else {
+                sb.append(indentation).append("@Column(name = \"").append(column.databaseColumnName).append("\")\n")
+            }
+            sb.append(indentation).append(column.javaType).append(" ").append(column.camelCaseFieldName).append("\n\n")
         }
     }
 

@@ -75,7 +75,7 @@ target.language=kotlin
 database.type=mysql
 ```
 
-Set `target.language` to `java` or `kotlin` to control the generated output language. Default is `java`.
+Set `target.language` to `java` or `kotlin` to control the generated output language. Default is `kotlin`.
 
 Set `database.type` to `mysql`, `postgresql`, `sqlite`, or `mssql` to match your dump file format. Default is `mysql`.
 
@@ -83,6 +83,7 @@ Set `database.type` to `mysql`, `postgresql`, `sqlite`, or `mssql` to match your
 
 Place your DDL dump file in `src/main/resources/`.
 
+For MySQL, use `mysqldump --no-data` to generate the dump file.
 For PostgreSQL, use `pg_dump --schema-only` to generate the dump file.
 For SQLite, use `sqlite3 database.db .dump` to generate the dump file.
 For MSSQL, use SSMS "Generate Scripts" or `sqlcmd` to export the schema.

@@ -82,8 +82,13 @@ class ConfigurationTest {
     }
 
     @Test
+    fun defaultFolderForGroovy() {
+        assertEquals("build/generated/src/main/groovy/", Configuration.defaultFolderForLanguage("groovy"))
+    }
+
+    @Test
     fun defaultFolderForUnknownLanguageFallsBackToJava() {
-        assertEquals("build/generated/src/main/java/", Configuration.defaultFolderForLanguage("groovy"))
+        assertEquals("build/generated/src/main/java/", Configuration.defaultFolderForLanguage("scala"))
     }
 
     // ── Folder fallback when target.folder is missing ────────────────
