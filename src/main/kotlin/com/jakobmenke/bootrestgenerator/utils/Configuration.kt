@@ -10,13 +10,19 @@ data class Configuration(
     val language: String = "java"
 ) {
     constructor(props: Properties) : this(
-        srcFolder = props.getProperty("target.folder"),
+        srcFolder = props.getProperty("target.folder")
+            ?: defaultFolderForLanguage(props.getProperty("target.language", "java")),
         targetPackage = props.getProperty("target.package"),
         fileName = props.getProperty("file.name"),
         language = props.getProperty("target.language", "java")
     )
 
     companion object {
+        fun defaultFolderForLanguage(language: String): String = when (language) {
+            "kotlin" -> "build/generated/src/main/kotlin/"
+            else -> "build/generated/src/main/java/"
+        }
+
         fun readConfig(configFileName: String): Properties? {
             val inputStream = Templates::class.java.classLoader.getResourceAsStream(configFileName)
                 ?: return null
