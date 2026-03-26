@@ -29,7 +29,7 @@ class KotlinPipelineTest {
     fun setUp() {
         Globals.LANGUAGE = "kotlin"
         val words = mutableListOf<String>()
-        val inputStream = javaClass.classLoader.getResourceAsStream("dump.sql")!!
+        val inputStream = javaClass.classLoader.getResourceAsStream("mysql_dump.sql")!!
         Util.getWords(words, inputStream)
         val entityList = mutableListOf<Entity>()
         Util.parseWords(entityList, words)

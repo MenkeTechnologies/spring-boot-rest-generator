@@ -43,9 +43,9 @@ class CrossDatabaseLanguageTest {
     companion object {
         @JvmStatic
         fun databaseLanguageMatrix(): Stream<Arguments> = Stream.of(
-            Arguments.of("mysql", "dump.sql", "java"),
-            Arguments.of("mysql", "dump.sql", "kotlin"),
-            Arguments.of("mysql", "dump.sql", "groovy"),
+            Arguments.of("mysql", "mysql_dump.sql", "java"),
+            Arguments.of("mysql", "mysql_dump.sql", "kotlin"),
+            Arguments.of("mysql", "mysql_dump.sql", "groovy"),
             Arguments.of("postgresql", "pg_dump.sql", "java"),
             Arguments.of("postgresql", "pg_dump.sql", "kotlin"),
             Arguments.of("postgresql", "pg_dump.sql", "groovy"),

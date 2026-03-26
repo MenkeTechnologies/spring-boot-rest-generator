@@ -24,7 +24,7 @@ class FullPipelineTest {
     @BeforeEach
     fun setUp() {
         val words = mutableListOf<String>()
-        val inputStream = javaClass.classLoader.getResourceAsStream("dump.sql")!!
+        val inputStream = javaClass.classLoader.getResourceAsStream("mysql_dump.sql")!!
         Util.getWords(words, inputStream)
         val entityList = mutableListOf<Entity>()
         Util.parseWords(entityList, words)
@@ -196,7 +196,7 @@ class FullPipelineTest {
     fun writesEntityFiles() {
         Globals.PACKAGE = "com/test/app"
         Globals.SRC_FOLDER = tempDir.toString()
-        Globals.FILE_NAME = "dump.sql"
+        Globals.FILE_NAME = "mysql_dump.sql"
 
         val main = Main()
         main.writeTemplates(entities)
@@ -213,7 +213,7 @@ class FullPipelineTest {
     fun writesRestFiles() {
         Globals.PACKAGE = "com/test/app"
         Globals.SRC_FOLDER = tempDir.toString()
-        Globals.FILE_NAME = "dump.sql"
+        Globals.FILE_NAME = "mysql_dump.sql"
 
         val main = Main()
         main.writeTemplates(entities)
@@ -229,7 +229,7 @@ class FullPipelineTest {
     fun writesDaoFiles() {
         Globals.PACKAGE = "com/test/app"
         Globals.SRC_FOLDER = tempDir.toString()
-        Globals.FILE_NAME = "dump.sql"
+        Globals.FILE_NAME = "mysql_dump.sql"
 
         val main = Main()
         main.writeTemplates(entities)
@@ -245,7 +245,7 @@ class FullPipelineTest {
     fun writesRepositoryFiles() {
         Globals.PACKAGE = "com/test/app"
         Globals.SRC_FOLDER = tempDir.toString()
-        Globals.FILE_NAME = "dump.sql"
+        Globals.FILE_NAME = "mysql_dump.sql"
 
         val main = Main()
         main.writeTemplates(entities)
@@ -260,7 +260,7 @@ class FullPipelineTest {
     fun writesUtilsFiles() {
         Globals.PACKAGE = "com/test/app"
         Globals.SRC_FOLDER = tempDir.toString()
-        Globals.FILE_NAME = "dump.sql"
+        Globals.FILE_NAME = "mysql_dump.sql"
 
         val main = Main()
         main.writeTemplates(entities)
@@ -275,7 +275,7 @@ class FullPipelineTest {
     fun generatedEntityFileHasCorrectContent() {
         Globals.PACKAGE = "com/test/app"
         Globals.SRC_FOLDER = tempDir.toString()
-        Globals.FILE_NAME = "dump.sql"
+        Globals.FILE_NAME = "mysql_dump.sql"
 
         val main = Main()
         main.writeTemplates(entities)
@@ -295,7 +295,7 @@ class FullPipelineTest {
     fun generatedRestFileHasCorrectContent() {
         Globals.PACKAGE = "com/test/app"
         Globals.SRC_FOLDER = tempDir.toString()
-        Globals.FILE_NAME = "dump.sql"
+        Globals.FILE_NAME = "mysql_dump.sql"
 
         val main = Main()
         main.writeTemplates(entities)
@@ -313,7 +313,7 @@ class FullPipelineTest {
     fun generatedDaoFileHasCorrectContent() {
         Globals.PACKAGE = "com/test/app"
         Globals.SRC_FOLDER = tempDir.toString()
-        Globals.FILE_NAME = "dump.sql"
+        Globals.FILE_NAME = "mysql_dump.sql"
 
         val main = Main()
         main.writeTemplates(entities)
@@ -329,7 +329,7 @@ class FullPipelineTest {
     fun generatedRepositoryFileHasCorrectContent() {
         Globals.PACKAGE = "com/test/app"
         Globals.SRC_FOLDER = tempDir.toString()
-        Globals.FILE_NAME = "dump.sql"
+        Globals.FILE_NAME = "mysql_dump.sql"
 
         val main = Main()
         main.writeTemplates(entities)
@@ -344,7 +344,7 @@ class FullPipelineTest {
     fun generatedConstantsFileHasCorrectContent() {
         Globals.PACKAGE = "com/test/app"
         Globals.SRC_FOLDER = tempDir.toString()
-        Globals.FILE_NAME = "dump.sql"
+        Globals.FILE_NAME = "mysql_dump.sql"
 
         val main = Main()
         main.writeTemplates(entities)
@@ -358,7 +358,7 @@ class FullPipelineTest {
     fun totalGeneratedFilesPerEntity() {
         Globals.PACKAGE = "com/test/app"
         Globals.SRC_FOLDER = tempDir.toString()
-        Globals.FILE_NAME = "dump.sql"
+        Globals.FILE_NAME = "mysql_dump.sql"
 
         val main = Main()
         main.writeTemplates(entities)
@@ -382,7 +382,7 @@ class FullPipelineTest {
     fun entityWithForeignKeyGeneratesJoinColumn() {
         Globals.PACKAGE = "com/test/app"
         Globals.SRC_FOLDER = tempDir.toString()
-        Globals.FILE_NAME = "dump.sql"
+        Globals.FILE_NAME = "mysql_dump.sql"
 
         val main = Main()
         main.writeTemplates(entities)
@@ -399,7 +399,7 @@ class FullPipelineTest {
     fun configurationLoadsAndParsesCorrectly() {
         val props = Configuration.readConfig("config.properties")!!
         val config = Configuration(props)
-        assertEquals("dump.sql", config.fileName)
+        assertEquals("mysql_dump.sql", config.fileName)
         assertEquals("com/example/generated", config.targetPackage)
         assertTrue(config.srcFolder.isNotEmpty())
     }

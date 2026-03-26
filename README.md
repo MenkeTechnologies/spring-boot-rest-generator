@@ -74,7 +74,7 @@ Edit `src/main/resources/config.properties`:
 ```properties
 target.folder=/absolute/path/to/your/project/src/main/java/
 target.package=com/your/package
-file.name=dump.sql
+file.name=mysql_dump.sql
 target.language=kotlin
 database.type=mysql
 ```
@@ -242,7 +242,7 @@ FOREIGN KEY                   -->   Integer (default)
 ## `> ARCHITECTURE`
 
 ```
- dump.sql
+ mysql_dump.sql
     |
     v
  [ TOKENIZER ] -- strips comments (#, --), splits tokens     (Util.getWords)

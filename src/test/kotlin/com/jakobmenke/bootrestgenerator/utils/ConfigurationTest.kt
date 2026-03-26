@@ -66,7 +66,7 @@ class ConfigurationTest {
         val props = Configuration.readConfig("config.properties")!!
         val config = Configuration(props)
         assertEquals("com/example/generated", config.targetPackage)
-        assertEquals("dump.sql", config.fileName)
+        assertEquals("mysql_dump.sql", config.fileName)
     }
 
     // ── defaultFolderForLanguage ───────────────────────────────────────
