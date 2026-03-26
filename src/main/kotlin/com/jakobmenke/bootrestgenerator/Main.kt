@@ -25,7 +25,7 @@ fun main() {
 }
 
 class Main {
-    private fun writeTemplates(entities: List<Entity>) {
+    fun writeTemplates(entities: List<Entity>) {
         val templates = Templates()
         for (entity in entities) {
             val entityTemplate = templates.getEntityTemplate(entity, Globals.PACKAGE)

@@ -7,14 +7,19 @@ plugins {
 group = "com.jakobmenke.bootrestgenerator"
 version = "1.0"
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+repositories {
+    mavenCentral()
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_23)
     }
 }
 
-repositories {
-    mavenCentral()
+java {
+    sourceCompatibility = JavaVersion.VERSION_23
+    targetCompatibility = JavaVersion.VERSION_23
 }
 
 dependencies {
