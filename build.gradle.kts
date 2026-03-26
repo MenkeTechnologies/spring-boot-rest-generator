@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     kotlin("jvm") version "2.1.10"
     id("org.springframework.boot") version "3.4.4"
@@ -34,4 +36,18 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+val targetFolder: String by lazy {
+    val props = Properties()
+    file("src/main/resources/config.properties").reader().use(props::load)
+    props.getProperty("target.folder", "build/")
+}
+
+val cleanTargetFolder by tasks.registering(Delete::class) {
+    delete(targetFolder)
+}
+
+tasks.named("bootRun") {
+    dependsOn(cleanTargetFolder)
 }
