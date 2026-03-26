@@ -35,11 +35,14 @@ No boilerplate. No hand-wiring. Just schema in, API out.
 [x] Generate REST controllers (GET / POST / PUT / DELETE)
 [x] Generate DAO service layer with GenericDao pattern
 [x] Generate Spring Data JPA repositories
-[x] Map MySQL types --> Java/Kotlin types (varchar->String, bigint->Long, datetime->LocalDateTime, ...)
-[x] Map PostgreSQL types --> Java/Kotlin types (integer, text, boolean, serial, numeric, real, ...)
-[x] Map SQLite types --> Java/Kotlin types (INTEGER, TEXT, REAL, NUMERIC, BLOB, ...)
-[x] Map MSSQL types --> Java/Kotlin types (nvarchar, uniqueidentifier, money, datetime2, ...)
-[x] Lombok-powered: @Data, @Builder, @AllArgsConstructor, @NoArgsConstructor
+[x] Output in Java, Kotlin, or Groovy
+[x] Map MySQL types --> Java/Kotlin/Groovy/Groovy types (varchar->String, bigint->Long, datetime->LocalDateTime, ...)
+[x] Map PostgreSQL types --> Java/Kotlin/Groovy/Groovy types (integer, text, boolean, serial, numeric, real, ...)
+[x] Map SQLite types --> Java/Kotlin/Groovy/Groovy types (INTEGER, TEXT, REAL, NUMERIC, BLOB, ...)
+[x] Map MSSQL types --> Java/Kotlin/Groovy/Groovy types (nvarchar, uniqueidentifier, money, datetime2, ...)
+[x] Java: Lombok-powered (@Data, @AllArgsConstructor, @NoArgsConstructor)
+[x] Kotlin: Constructor injection, var properties with defaults, no Lombok
+[x] Groovy: @Canonical annotation, field injection, no Lombok
 [x] snake_case tables --> PascalCase entities, camelCase fields
 [x] Template-driven codegen with {{placeholder}} substitution
 ```
@@ -55,9 +58,10 @@ No boilerplate. No hand-wiring. Just schema in, API out.
 | Framework      | Spring Boot 3.4.4             |
 | ORM            | Spring Data JPA (Jakarta)     |
 | Build          | Gradle 9.4.1 (Kotlin DSL)    |
-| Boilerplate    | Lombok                        |
+| Boilerplate    | Lombok (Java), @Canonical (Groovy) |
 | Tests          | JUnit 5                       |
 | DB Support     | MySQL, PostgreSQL, SQLite, MSSQL |
+| Output Languages | Java, Kotlin, Groovy          |
 
 ---
 
@@ -75,7 +79,7 @@ target.language=kotlin
 database.type=mysql
 ```
 
-Set `target.language` to `java` or `kotlin` to control the generated output language. Default is `kotlin`.
+Set `target.language` to `java`, `kotlin`, or `groovy` to control the generated output language. Default is `java`.
 
 Set `database.type` to `mysql`, `postgresql`, `sqlite`, or `mssql` to match your dump file format. Default is `mysql`.
 
@@ -100,26 +104,41 @@ Or run `Main.kt` from your IDE. Watch the grid light up.
 
 ## `> OUTPUT MATRIX`
 
+File extensions depend on `target.language`: `.java`, `.kt`, or `.groovy`.
+
 ```
 {target.folder}/{target.package}/
  |-- entity/
- |    |-- User.java           @Entity @Data @Table @Column @Id @ManyToOne
- |    |-- Module.java
+ |    |-- User.{ext}           @Entity @Table @Column @Id @ManyToOne
+ |    |-- Module.{ext}
  |    \-- ...
  |-- rest/
- |    |-- UserResource.java   @RestController with full CRUD
- |    |-- ModuleResource.java
+ |    |-- UserResource.{ext}   @RestController with full CRUD
+ |    |-- ModuleResource.{ext}
  |    \-- ...
  |-- dao/
- |    |-- UserDao.java        @Service implementing GenericDao<T>
- |    |-- GenericDao.java     Generic interface for all DAOs
+ |    |-- UserDao.{ext}        @Service implementing GenericDao<T>
+ |    |-- GenericDao.{ext}     Generic interface for all DAOs
  |    \-- ...
  |-- repository/
- |    |-- UserRepository.java extends JpaRepository<T, Long>
+ |    |-- UserRepository.{ext} extends JpaRepository<T, Long>
  |    \-- ...
  \-- utils/
-      \-- GlobalConstants.java
+      \-- GlobalConstants.{ext}
 ```
+
+### Language Differences
+
+| Feature              | Java                          | Kotlin                         | Groovy                         |
+|----------------------|-------------------------------|--------------------------------|--------------------------------|
+| Entity boilerplate   | Lombok (@Data, @NoArgsConstructor) | var properties with defaults | @Canonical                     |
+| DI style             | @Autowired field injection    | Constructor injection          | @Autowired field injection     |
+| Inheritance syntax   | `extends` / `implements`      | `:` (colon)                    | `extends` / `implements`       |
+| File extension       | `.java`                       | `.kt`                          | `.groovy`                      |
+| Semicolons           | Yes                           | No                             | No                             |
+| int type             | Integer                       | Int                            | Integer                        |
+| bit/boolean type     | String                        | Boolean                        | String                         |
+| FK type              | Integer                       | Int                            | Integer                        |
 
 ---
 
@@ -143,7 +162,7 @@ DELETE  /api/v1/{entity}        // flatline all
 ### MySQL
 
 ```
-MySQL              -->   Java/Kotlin
+MySQL              -->   Java/Kotlin/Groovy
 -----------------------------------------
 int, tinyint       -->   Integer
 bigint             -->   Long
@@ -161,7 +180,7 @@ FOREIGN KEY        -->   Integer (default)
 ### PostgreSQL
 
 ```
-PostgreSQL                    -->   Java/Kotlin
+PostgreSQL                    -->   Java/Kotlin/Groovy
 -------------------------------------------------
 integer, smallint, serial     -->   Integer
 bigint, bigserial             -->   Long
@@ -170,7 +189,7 @@ text                          -->   String
 real                          -->   Float
 double precision              -->   Double
 numeric                       -->   Double
-boolean, bool                 -->   String (Java) / Boolean (Kotlin)
+boolean, bool                 -->   String (Java/Groovy) / Boolean (Kotlin)
 date                          -->   LocalDate
 timestamp (with/without tz)   -->   LocalDateTime
 time (with/without tz)        -->   LocalTime
@@ -181,7 +200,7 @@ FOREIGN KEY                   -->   Integer (default)
 ### SQLite
 
 ```
-SQLite               -->   Java/Kotlin
+SQLite               -->   Java/Kotlin/Groovy
 -----------------------------------------
 INTEGER              -->   Integer
 TEXT                 -->   String
@@ -196,7 +215,7 @@ FOREIGN KEY          -->   Integer (default)
 ### MSSQL (SQL Server)
 
 ```
-MSSQL                         -->   Java/Kotlin
+MSSQL                         -->   Java/Kotlin/Groovy
 -------------------------------------------------
 int, tinyint, smallint        -->   Integer
 bigint                        -->   Long
@@ -208,7 +227,7 @@ float                         -->   Float
 real                          -->   Float
 money, smallmoney             -->   Double
 decimal, numeric              -->   Double
-bit                           -->   String (Java) / Boolean (Kotlin)
+bit                           -->   String (Java/Groovy) / Boolean (Kotlin)
 date                          -->   LocalDate
 datetime                      -->   LocalDate
 datetime2, datetimeoffset     -->   LocalDateTime
@@ -262,13 +281,9 @@ src/main/kotlin/com/jakobmenke/bootrestgenerator/
       \-- Globals.kt                  Global state holder
 
 src/main/resources/templates/
- |-- entity.tmpl                      JPA Entity template
- |-- rest.resource.tmpl               REST Controller template
- |-- dao.tmpl                         Service/DAO template
- |-- repository.tmpl                  Spring Data JPA interface
- |-- genericdao.tmpl                  Generic DAO interface
- |-- constants.tmpl                   Global constants
- \-- restrepository.tmpl              Alternative REST template
+ |-- *.tmpl                              Java templates (default)
+ |-- kotlin/*.tmpl                       Kotlin templates
+ \-- groovy/*.tmpl                       Groovy templates
 ```
 
 ---
