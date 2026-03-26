@@ -1,8 +1,8 @@
 import java.util.Properties
 
 plugins {
-    kotlin("jvm") version "2.1.10"
-    id("org.springframework.boot") version "3.4.4"
+    kotlin("jvm") version "2.3.20"
+    id("org.springframework.boot") version "4.0.4"
     id("io.spring.dependency-management") version "1.1.7"
     application
 }
@@ -20,13 +20,13 @@ repositories {
 
 kotlin {
     compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_23)
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25)
     }
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_23
-    targetCompatibility = JavaVersion.VERSION_23
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 }
 
 dependencies {

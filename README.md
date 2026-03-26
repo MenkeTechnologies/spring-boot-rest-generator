@@ -53,9 +53,9 @@ No boilerplate. No hand-wiring. Just schema in, API out.
 
 | Layer          | Tech                          |
 |----------------|-------------------------------|
-| Language       | Kotlin 2.1.10                 |
-| Runtime        | Java 23                       |
-| Framework      | Spring Boot 3.4.4             |
+| Language       | Kotlin 2.3.20                 |
+| Runtime        | Java 25                       |
+| Framework      | Spring Boot 4.0.4             |
 | ORM            | Spring Data JPA (Jakarta)     |
 | Build          | Gradle 9.4.1 (Kotlin DSL)    |
 | Boilerplate    | Lombok (Java), @Canonical (Groovy) |
