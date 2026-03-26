@@ -17,7 +17,7 @@
 
 ## `> SYSTEM OVERVIEW`
 
-**Spring Boot REST Generator** is a zero-config code generation engine that parses raw MySQL, PostgreSQL, or SQLite DDL dumps and outputs a fully wired Spring Boot REST API -- entities, controllers, DAOs, repositories -- all of it. You feed it SQL. It feeds you a backend.
+**Spring Boot REST Generator** is a zero-config code generation engine that parses raw MySQL, PostgreSQL, SQLite, or Microsoft SQL Server DDL dumps and outputs a fully wired Spring Boot REST API -- entities, controllers, DAOs, repositories -- all of it. You feed it SQL. It feeds you a backend.
 
 No boilerplate. No hand-wiring. Just schema in, API out.
 
@@ -29,6 +29,7 @@ No boilerplate. No hand-wiring. Just schema in, API out.
 [x] Parse MySQL CREATE TABLE statements
 [x] Parse PostgreSQL CREATE TABLE + ALTER TABLE statements (pg_dump compatible)
 [x] Parse SQLite CREATE TABLE statements (.dump compatible)
+[x] Parse MSSQL CREATE TABLE statements (SSMS Generate Scripts compatible)
 [x] Auto-detect primary keys, foreign keys, column types
 [x] Generate JPA entities with @Id, @ManyToOne, @JoinColumn
 [x] Generate REST controllers (GET / POST / PUT / DELETE)
@@ -37,6 +38,7 @@ No boilerplate. No hand-wiring. Just schema in, API out.
 [x] Map MySQL types --> Java/Kotlin types (varchar->String, bigint->Long, datetime->LocalDateTime, ...)
 [x] Map PostgreSQL types --> Java/Kotlin types (integer, text, boolean, serial, numeric, real, ...)
 [x] Map SQLite types --> Java/Kotlin types (INTEGER, TEXT, REAL, NUMERIC, BLOB, ...)
+[x] Map MSSQL types --> Java/Kotlin types (nvarchar, uniqueidentifier, money, datetime2, ...)
 [x] Lombok-powered: @Data, @Builder, @AllArgsConstructor, @NoArgsConstructor
 [x] snake_case tables --> PascalCase entities, camelCase fields
 [x] Template-driven codegen with {{placeholder}} substitution
@@ -55,7 +57,7 @@ No boilerplate. No hand-wiring. Just schema in, API out.
 | Build          | Gradle 9.4.1 (Kotlin DSL)    |
 | Boilerplate    | Lombok                        |
 | Tests          | JUnit 5                       |
-| DB Support     | MySQL, PostgreSQL, SQLite DDL  |
+| DB Support     | MySQL, PostgreSQL, SQLite, MSSQL |
 
 ---
 
@@ -75,7 +77,7 @@ database.type=mysql
 
 Set `target.language` to `java` or `kotlin` to control the generated output language. Default is `java`.
 
-Set `database.type` to `mysql`, `postgresql`, or `sqlite` to match your dump file format. Default is `mysql`.
+Set `database.type` to `mysql`, `postgresql`, `sqlite`, or `mssql` to match your dump file format. Default is `mysql`.
 
 ### 2. Drop your SQL
 
@@ -83,6 +85,7 @@ Place your DDL dump file in `src/main/resources/`.
 
 For PostgreSQL, use `pg_dump --schema-only` to generate the dump file.
 For SQLite, use `sqlite3 database.db .dump` to generate the dump file.
+For MSSQL, use SSMS "Generate Scripts" or `sqlcmd` to export the schema.
 
 ### 3. Execute
 
@@ -189,6 +192,31 @@ INTEGER PRIMARY KEY  -->   Long (inline PK detected)
 FOREIGN KEY          -->   Integer (default)
 ```
 
+### MSSQL (SQL Server)
+
+```
+MSSQL                         -->   Java/Kotlin
+-------------------------------------------------
+int, tinyint, smallint        -->   Integer
+bigint                        -->   Long
+nvarchar, nchar, varchar      -->   String
+ntext, text, char             -->   String
+uniqueidentifier              -->   String
+image, xml                    -->   String
+float                         -->   Float
+real                          -->   Float
+money, smallmoney             -->   Double
+decimal, numeric              -->   Double
+bit                           -->   String (Java) / Boolean (Kotlin)
+date                          -->   LocalDate
+datetime                      -->   LocalDate
+datetime2, datetimeoffset     -->   LocalDateTime
+smalldatetime                 -->   LocalDateTime
+time                          -->   LocalTime
+PRIMARY KEY                   -->   Long (default)
+FOREIGN KEY                   -->   Integer (default)
+```
+
 ---
 
 ## `> ARCHITECTURE`
@@ -200,8 +228,9 @@ FOREIGN KEY          -->   Integer (default)
  [ TOKENIZER ] -- strips comments (#, --), splits tokens     (Util.getWords)
     |
     v
- [ NORMALIZER ] -- (PG/SQLite) combines multi-word types,    (Util.normalizePostgresqlWords)
-    |               strips punctuation, filters noise         (Util.normalizeSqliteWords)
+ [ NORMALIZER ] -- combines multi-word types, strips          (Util.normalizePostgresqlWords)
+    |               punctuation, brackets, filters noise       (Util.normalizeSqliteWords)
+    |               (database-specific normalizer per type)    (Util.normalizeMssqlWords)
     v
  [ PARSER ] -- detects CREATE TABLE, columns, keys           (Util.parseWords)
     |           supports ALTER TABLE for PG primary/foreign keys

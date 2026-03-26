@@ -3,7 +3,9 @@ package com.jakobmenke.bootrestgenerator.utils
 object EntityToRESTConstants {
     const val DB_ESCAPE_CHARACTER = "`"
     const val PG_DB_ESCAPE_CHARACTER = "\""
-    const val SUPPORTED_DATA_TYPES_REGEX = "\\b(?i:varchar|tinyint|bigint|bigserial|int|integer|smallint|serial|double|float|real|numeric|time|datetime|timestamp|date|bit|boolean|bool|text|blob)[()\\d,]*"
+    const val MSSQL_DB_ESCAPE_OPEN = "["
+    const val MSSQL_DB_ESCAPE_CLOSE = "]"
+    const val SUPPORTED_DATA_TYPES_REGEX = "\\b(?i:nvarchar|nchar|ntext|varchar|uniqueidentifier|datetimeoffset|smalldatetime|datetime2|datetime|smallmoney|tinyint|smallint|bigint|bigserial|integer|serial|decimal|numeric|timestamp|money|float|image|double|bit|boolean|bool|real|date|time|text|blob|char|xml|int)[()\\d,]*"
     const val PRIMARY_FOREIGN_REGEX = "^(PRIMARY|FOREIGN)"
     const val INT_REGEX = "\\b(tinyint|int)[()\\d]*"
     const val VARCHAR_REGEX = "\\bvarchar[()\\d]*"
@@ -23,6 +25,14 @@ object EntityToRESTConstants {
     const val PG_NUMERIC_REGEX = "\\bnumeric[()\\d,]*"
     const val PG_REAL_REGEX = "\\breal[()\\d]*"
     const val PG_DATE_REGEX = "\\bdate"
+
+    // MSSQL type regexes
+    const val MSSQL_NVARCHAR_REGEX = "\\b(nvarchar|nchar|ntext|char)[()\\d]*"
+    const val MSSQL_MONEY_REGEX = "\\b(money|smallmoney)"
+    const val MSSQL_UNIQUEIDENTIFIER_REGEX = "\\buniqueidentifier"
+    const val MSSQL_DATETIME2_REGEX = "\\b(datetime2|datetimeoffset|smalldatetime)[()\\d]*"
+    const val MSSQL_DECIMAL_REGEX = "\\bdecimal[()\\d,]*"
+    const val MSSQL_IMAGE_REGEX = "\\b(image|xml)"
 
     const val FOREIGN_KEY_REFERENCES_REGEX = "^FOREIGN KEY\\s*\\(([^)]+)\\)\\s+REFERENCES\\s+([^(\\s]+)\\s*\\(([^)]+)\\)"
     const val PRIMARY_KEY_S_S = "^PRIMARY KEY\\s*\\(([^)]+)\\).*"

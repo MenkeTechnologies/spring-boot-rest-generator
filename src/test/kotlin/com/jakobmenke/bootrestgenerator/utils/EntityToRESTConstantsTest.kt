@@ -38,6 +38,19 @@ class EntityToRESTConstantsTest {
         @Test fun matchesDate() = assertTrue(pattern.matcher("date").matches())
         @Test fun matchesBool() = assertTrue(pattern.matcher("bool").matches())
         @Test fun matchesBlob() = assertTrue(pattern.matcher("blob").matches())
+        @Test fun matchesNvarchar() = assertTrue(pattern.matcher("nvarchar(50)").matches())
+        @Test fun matchesNchar() = assertTrue(pattern.matcher("nchar(10)").matches())
+        @Test fun matchesNtext() = assertTrue(pattern.matcher("ntext").matches())
+        @Test fun matchesChar() = assertTrue(pattern.matcher("char(10)").matches())
+        @Test fun matchesUniqueidentifier() = assertTrue(pattern.matcher("uniqueidentifier").matches())
+        @Test fun matchesMoney() = assertTrue(pattern.matcher("money").matches())
+        @Test fun matchesSmallmoney() = assertTrue(pattern.matcher("smallmoney").matches())
+        @Test fun matchesDatetime2() = assertTrue(pattern.matcher("datetime2(7)").matches())
+        @Test fun matchesDatetimeoffset() = assertTrue(pattern.matcher("datetimeoffset(7)").matches())
+        @Test fun matchesSmalldatetime() = assertTrue(pattern.matcher("smalldatetime").matches())
+        @Test fun matchesDecimal() = assertTrue(pattern.matcher("decimal(10,2)").matches())
+        @Test fun matchesImage() = assertTrue(pattern.matcher("image").matches())
+        @Test fun matchesXml() = assertTrue(pattern.matcher("xml").matches())
     }
 
     // ── PRIMARY_FOREIGN_REGEX ──────────────────────────────────────────
@@ -233,6 +246,54 @@ class EntityToRESTConstantsTest {
         @Test fun matchesDate() = assertTrue(pattern.matcher("date").matches())
     }
 
+    // ── MSSQL type regexes ──────────────────────────────────────────────
+
+    @Nested
+    inner class MssqlNvarcharRegex {
+        private val pattern = Pattern.compile(EntityToRESTConstants.MSSQL_NVARCHAR_REGEX)
+        @Test fun matchesNvarchar() = assertTrue(pattern.matcher("nvarchar(50)").matches())
+        @Test fun matchesNchar() = assertTrue(pattern.matcher("nchar(100)").matches())
+        @Test fun matchesNtext() = assertTrue(pattern.matcher("ntext").matches())
+        @Test fun matchesChar() = assertTrue(pattern.matcher("char(10)").matches())
+        @Test fun doesNotMatchVarchar() = assertFalse(pattern.matcher("varchar(50)").matches())
+    }
+
+    @Nested
+    inner class MssqlMoneyRegex {
+        private val pattern = Pattern.compile(EntityToRESTConstants.MSSQL_MONEY_REGEX)
+        @Test fun matchesMoney() = assertTrue(pattern.matcher("money").matches())
+        @Test fun matchesSmallmoney() = assertTrue(pattern.matcher("smallmoney").matches())
+    }
+
+    @Nested
+    inner class MssqlUniqueidentifierRegex {
+        private val pattern = Pattern.compile(EntityToRESTConstants.MSSQL_UNIQUEIDENTIFIER_REGEX)
+        @Test fun matchesUniqueidentifier() = assertTrue(pattern.matcher("uniqueidentifier").matches())
+    }
+
+    @Nested
+    inner class MssqlDatetime2Regex {
+        private val pattern = Pattern.compile(EntityToRESTConstants.MSSQL_DATETIME2_REGEX)
+        @Test fun matchesDatetime2() = assertTrue(pattern.matcher("datetime2(7)").matches())
+        @Test fun matchesDatetimeoffset() = assertTrue(pattern.matcher("datetimeoffset(7)").matches())
+        @Test fun matchesSmalldatetime() = assertTrue(pattern.matcher("smalldatetime").matches())
+        @Test fun doesNotMatchDatetime() = assertFalse(pattern.matcher("datetime").matches())
+    }
+
+    @Nested
+    inner class MssqlDecimalRegex {
+        private val pattern = Pattern.compile(EntityToRESTConstants.MSSQL_DECIMAL_REGEX)
+        @Test fun matchesDecimal() = assertTrue(pattern.matcher("decimal(10,2)").matches())
+        @Test fun matchesBareDecimal() = assertTrue(pattern.matcher("decimal").matches())
+    }
+
+    @Nested
+    inner class MssqlImageRegex {
+        private val pattern = Pattern.compile(EntityToRESTConstants.MSSQL_IMAGE_REGEX)
+        @Test fun matchesImage() = assertTrue(pattern.matcher("image").matches())
+        @Test fun matchesXml() = assertTrue(pattern.matcher("xml").matches())
+    }
+
     // ── Constants values ───────────────────────────────────────────────
 
     @Test fun pkDataType() = assertEquals("Long", EntityToRESTConstants.PK_DATA_TYPE)
@@ -241,6 +302,8 @@ class EntityToRESTConstantsTest {
     @Test fun fkId() = assertEquals("@ManyToOne", EntityToRESTConstants.FK_ID)
     @Test fun dbEscapeChar() = assertEquals("`", EntityToRESTConstants.DB_ESCAPE_CHARACTER)
     @Test fun pgDbEscapeChar() = assertEquals("\"", EntityToRESTConstants.PG_DB_ESCAPE_CHARACTER)
+    @Test fun mssqlEscapeOpen() = assertEquals("[", EntityToRESTConstants.MSSQL_DB_ESCAPE_OPEN)
+    @Test fun mssqlEscapeClose() = assertEquals("]", EntityToRESTConstants.MSSQL_DB_ESCAPE_CLOSE)
     @Test fun underscore() = assertEquals("_", EntityToRESTConstants.UNDERSCORE)
     @Test fun spaceChar() = assertEquals(" ", EntityToRESTConstants.SPACE_CHAR)
 }

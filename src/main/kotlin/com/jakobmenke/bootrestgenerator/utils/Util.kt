@@ -44,21 +44,33 @@ object Util {
 
                 entities.last().columns.add(ColumnToField(columnName, camelName, word, javaType))
 
-                // SQLite inline PRIMARY KEY: "column_name TYPE PRIMARY KEY [AUTOINCREMENT]"
-                if (Globals.isSqlite && i + 2 < words.size
-                    && words[i + 1].equals("PRIMARY", ignoreCase = true)
-                    && words[i + 2].equals("KEY", ignoreCase = true)
-                ) {
-                    val entity = entities.last()
-                    val lastIdx = entity.columns.size - 1
-                    val pkColumn = ColumnToField(
-                        databaseIdType = EntityToRESTConstants.PK_ID,
-                        databaseColumnName = columnName,
-                        camelCaseFieldName = camelName.replace(Regex("[iI]d$"), ""),
-                        databaseType = null,
-                        javaType = EntityToRESTConstants.PK_DATA_TYPE
-                    )
-                    entity.columns[lastIdx] = pkColumn
+                // Inline PRIMARY KEY: "column_name TYPE [NOT NULL] PRIMARY KEY [AUTOINCREMENT/IDENTITY]"
+                if (Globals.isSqlite || Globals.isMssql) {
+                    val maxLook = minOf(i + 5, words.size - 1)
+                    for (k in i + 1..maxLook) {
+                        val w = words[k]
+                        // Stop scanning if we hit another column def or constraint boundary
+                        if (w.equals("CONSTRAINT", ignoreCase = true)
+                            || w.equals("FOREIGN", ignoreCase = true)
+                            || w == ")" || w == "("
+                        ) break
+                        if (w.equals("PRIMARY", ignoreCase = true)
+                            && k + 1 < words.size
+                            && words[k + 1].equals("KEY", ignoreCase = true)
+                        ) {
+                            val entity = entities.last()
+                            val lastIdx = entity.columns.size - 1
+                            val pkColumn = ColumnToField(
+                                databaseIdType = EntityToRESTConstants.PK_ID,
+                                databaseColumnName = columnName,
+                                camelCaseFieldName = camelName.replace(Regex("[iI]d$"), ""),
+                                databaseType = null,
+                                javaType = EntityToRESTConstants.PK_DATA_TYPE
+                            )
+                            entity.columns[lastIdx] = pkColumn
+                            break
+                        }
+                    }
                 }
             }
 
@@ -120,9 +132,13 @@ object Util {
 
     private fun stripSchemaAndEscape(name: String, escapeChar: String): String {
         var clean = name.replace(escapeChar, "")
+        // Also strip closing bracket for MSSQL
+        if (Globals.isMssql) {
+            clean = clean.replace(EntityToRESTConstants.MSSQL_DB_ESCAPE_CLOSE, "")
+        }
         // Remove trailing punctuation (semicolons, commas, parens)
         clean = clean.trimEnd(';', ',', '(', ')')
-        // Remove schema prefix (e.g., "public.table_name" → "table_name")
+        // Remove schema prefix (e.g., "public.table_name" → "table_name", "dbo.Users" → "Users")
         if (clean.contains(".")) {
             clean = clean.substringAfterLast(".")
         }
@@ -214,16 +230,66 @@ object Util {
         }
     }
 
+    fun normalizeMssqlWords(words: MutableList<String>) {
+        // First pass: strip square brackets and trailing punctuation from all tokens
+        for (i in words.indices) {
+            words[i] = words[i]
+                .replace("[", "")
+                .replace("]", "")
+                .trimEnd(';', ',')
+            // Strip (max)/(MAX) from type tokens like nvarchar(max)
+            words[i] = words[i].replace(Regex("\\((?i:max)\\)"), "")
+        }
+
+        // Second pass: remove MSSQL noise tokens
+        var i = 0
+        while (i < words.size) {
+            val upper = words[i].uppercase()
+            when {
+                // Remove SET, USE, GO, EXEC, PRINT, IF, DROP, INSERT statements
+                upper == "SET" || upper == "USE" || upper == "GO" || upper == "EXEC"
+                        || upper == "PRINT" || upper == "IF" || upper == "DROP"
+                        || upper == "INSERT" || upper == "BEGIN" || upper == "END" -> {
+                    while (i < words.size) {
+                        val next = words[i].uppercase().trimEnd(';', ',', '(', ')')
+                        if (next == "CREATE" || next == "ALTER") break
+                        words.removeAt(i)
+                    }
+                }
+                // Remove CLUSTERED, NONCLUSTERED, ASC, DESC keywords (may have trailing parens)
+                upper.trimEnd('(', ')') == "CLUSTERED" || upper.trimEnd('(', ')') == "NONCLUSTERED"
+                        || upper.trimEnd('(', ')') == "ASC" || upper.trimEnd('(', ')') == "DESC" -> {
+                    val trailing = words[i].filter { it == '(' || it == ')' }
+                    if (trailing.isNotEmpty()) {
+                        words[i] = trailing
+                        i++
+                    } else {
+                        words.removeAt(i)
+                    }
+                }
+                // Remove IDENTITY(n,n) tokens
+                upper.startsWith("IDENTITY") -> {
+                    words.removeAt(i)
+                }
+                else -> i++
+            }
+        }
+    }
+
     private fun getJavaType(datatype: String): String {
         val isKotlin = Globals.isKotlin
         val dt = datatype.lowercase()
         return when {
             Pattern.compile(EntityToRESTConstants.VARCHAR_REGEX).matcher(dt).matches() -> "String"
+            Pattern.compile(EntityToRESTConstants.MSSQL_NVARCHAR_REGEX).matcher(dt).matches() -> "String"
             Pattern.compile(EntityToRESTConstants.PG_TEXT_REGEX).matcher(dt).matches() -> "String"
+            Pattern.compile(EntityToRESTConstants.MSSQL_UNIQUEIDENTIFIER_REGEX).matcher(dt).matches() -> "String"
+            Pattern.compile(EntityToRESTConstants.MSSQL_IMAGE_REGEX).matcher(dt).matches() -> "String"
             Pattern.compile(EntityToRESTConstants.PG_BIGINT_REGEX).matcher(dt).matches() -> "Long"
             Pattern.compile(EntityToRESTConstants.BIGINT_REGEX).matcher(dt).matches() -> "Long"
             Pattern.compile(EntityToRESTConstants.INT_REGEX).matcher(dt).matches() -> if (isKotlin) "Int" else "Integer"
             Pattern.compile(EntityToRESTConstants.PG_INTEGER_REGEX).matcher(dt).matches() -> if (isKotlin) "Int" else "Integer"
+            Pattern.compile(EntityToRESTConstants.MSSQL_DATETIME2_REGEX).matcher(dt).matches() -> "LocalDateTime"
             Pattern.compile(EntityToRESTConstants.DATETIME_REGEX).matcher(dt).matches() -> "LocalDate"
             Pattern.compile(EntityToRESTConstants.PG_DATE_REGEX).matcher(dt).matches() -> "LocalDate"
             Pattern.compile(EntityToRESTConstants.PG_BOOLEAN_REGEX).matcher(dt).matches() -> if (isKotlin) "Boolean" else "String"
@@ -232,6 +298,8 @@ object Util {
             Pattern.compile(EntityToRESTConstants.PG_REAL_REGEX).matcher(dt).matches() -> "Float"
             Pattern.compile(EntityToRESTConstants.DOUBLE_REGEX).matcher(dt).matches() -> "Double"
             Pattern.compile(EntityToRESTConstants.PG_NUMERIC_REGEX).matcher(dt).matches() -> "Double"
+            Pattern.compile(EntityToRESTConstants.MSSQL_DECIMAL_REGEX).matcher(dt).matches() -> "Double"
+            Pattern.compile(EntityToRESTConstants.MSSQL_MONEY_REGEX).matcher(dt).matches() -> "Double"
             Pattern.compile(EntityToRESTConstants.TIME_REGEX).matcher(dt).matches() -> "LocalTime"
             Pattern.compile(EntityToRESTConstants.TIMESTAMP_REGEX).matcher(dt).matches() -> "LocalDateTime"
             else -> "String"
@@ -278,7 +346,7 @@ object Util {
         val pkMatcher = pkPattern.matcher(key)
         if (pkMatcher.matches()) {
             idType = EntityToRESTConstants.PK_ID
-            dbName = pkMatcher.group(1).replace(escapeChar, "")
+            dbName = pkMatcher.group(1).replace(escapeChar, "").trim()
             javaType = EntityToRESTConstants.PK_DATA_TYPE
         } else {
             idType = EntityToRESTConstants.FK_ID
