@@ -65,8 +65,81 @@ class ConfigurationTest {
     fun constructFromRealConfig() {
         val props = Configuration.readConfig("config.properties")!!
         val config = Configuration(props)
-        assertEquals("com/reallingua/api", config.targetPackage)
+        assertEquals("com/example/generated", config.targetPackage)
         assertEquals("dump.sql", config.fileName)
+    }
+
+    // ── defaultFolderForLanguage ───────────────────────────────────────
+
+    @Test
+    fun defaultFolderForJava() {
+        assertEquals("build/generated/src/main/java/", Configuration.defaultFolderForLanguage("java"))
+    }
+
+    @Test
+    fun defaultFolderForKotlin() {
+        assertEquals("build/generated/src/main/kotlin/", Configuration.defaultFolderForLanguage("kotlin"))
+    }
+
+    @Test
+    fun defaultFolderForUnknownLanguageFallsBackToJava() {
+        assertEquals("build/generated/src/main/java/", Configuration.defaultFolderForLanguage("groovy"))
+    }
+
+    // ── Folder fallback when target.folder is missing ────────────────
+
+    @Test
+    fun missingTargetFolderDefaultsBasedOnJava() {
+        val props = Properties().apply {
+            setProperty("target.package", "com/example")
+            setProperty("file.name", "schema.sql")
+            setProperty("target.language", "java")
+        }
+        val config = Configuration(props)
+        assertEquals("build/generated/src/main/java/", config.srcFolder)
+    }
+
+    @Test
+    fun missingTargetFolderDefaultsBasedOnKotlin() {
+        val props = Properties().apply {
+            setProperty("target.package", "com/example")
+            setProperty("file.name", "schema.sql")
+            setProperty("target.language", "kotlin")
+        }
+        val config = Configuration(props)
+        assertEquals("build/generated/src/main/kotlin/", config.srcFolder)
+    }
+
+    @Test
+    fun missingTargetFolderAndLanguageDefaultsToJava() {
+        val props = Properties().apply {
+            setProperty("target.package", "com/example")
+            setProperty("file.name", "schema.sql")
+        }
+        val config = Configuration(props)
+        assertEquals("build/generated/src/main/java/", config.srcFolder)
+        assertEquals("java", config.language)
+    }
+
+    @Test
+    fun explicitTargetFolderOverridesDefault() {
+        val props = Properties().apply {
+            setProperty("target.folder", "/custom/path/")
+            setProperty("target.package", "com/example")
+            setProperty("file.name", "schema.sql")
+            setProperty("target.language", "kotlin")
+        }
+        val config = Configuration(props)
+        assertEquals("/custom/path/", config.srcFolder)
+    }
+
+    // ── Real config values ───────────────────────────────────────────
+
+    @Test
+    fun realConfigHasExpectedTargetFolder() {
+        val props = Configuration.readConfig("config.properties")!!
+        val config = Configuration(props)
+        assertEquals("build/generated/", config.srcFolder)
     }
 
     // ── Data class behavior ────────────────────────────────────────────

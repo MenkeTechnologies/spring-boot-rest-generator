@@ -400,7 +400,7 @@ class FullPipelineTest {
         val props = Configuration.readConfig("config.properties")!!
         val config = Configuration(props)
         assertEquals("dump.sql", config.fileName)
-        assertEquals("com/reallingua/api", config.targetPackage)
+        assertEquals("com/example/generated", config.targetPackage)
         assertTrue(config.srcFolder.isNotEmpty())
     }
 }

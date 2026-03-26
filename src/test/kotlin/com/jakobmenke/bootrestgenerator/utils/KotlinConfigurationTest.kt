@@ -33,7 +33,7 @@ class KotlinConfigurationTest {
     fun configurationFromRealConfigHasLanguage() {
         val props = Configuration.readConfig("config.properties")!!
         val config = Configuration(props)
-        assertEquals("kotlin", config.language)
+        assertEquals("java", config.language)
     }
 
     @Test
