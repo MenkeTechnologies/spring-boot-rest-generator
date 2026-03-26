@@ -27,9 +27,17 @@ class EntityToRESTConstantsTest {
         @Test fun matchesBit() = assertTrue(pattern.matcher("bit(1)").matches())
         @Test fun matchesTime() = assertTrue(pattern.matcher("time").matches())
         @Test fun caseInsensitive() = assertTrue(pattern.matcher("VARCHAR(100)").matches())
-        @Test fun doesNotMatchText() = assertFalse(pattern.matcher("text").matches())
-        @Test fun doesNotMatchBlob() = assertFalse(pattern.matcher("blob").matches())
-        @Test fun doesNotMatchDecimal() = assertFalse(pattern.matcher("decimal(10,2)").matches())
+        @Test fun matchesText() = assertTrue(pattern.matcher("text").matches())
+        @Test fun matchesInteger() = assertTrue(pattern.matcher("integer").matches())
+        @Test fun matchesBoolean() = assertTrue(pattern.matcher("boolean").matches())
+        @Test fun matchesSerial() = assertTrue(pattern.matcher("serial").matches())
+        @Test fun matchesBigserial() = assertTrue(pattern.matcher("bigserial").matches())
+        @Test fun matchesReal() = assertTrue(pattern.matcher("real").matches())
+        @Test fun matchesNumeric() = assertTrue(pattern.matcher("numeric(10,2)").matches())
+        @Test fun matchesSmallint() = assertTrue(pattern.matcher("smallint").matches())
+        @Test fun matchesDate() = assertTrue(pattern.matcher("date").matches())
+        @Test fun matchesBool() = assertTrue(pattern.matcher("bool").matches())
+        @Test fun matchesBlob() = assertTrue(pattern.matcher("blob").matches())
     }
 
     // ── PRIMARY_FOREIGN_REGEX ──────────────────────────────────────────
@@ -174,6 +182,57 @@ class EntityToRESTConstantsTest {
         }
     }
 
+    // ── PostgreSQL type regexes ─────────────────────────────────────────
+
+    @Nested
+    inner class PgIntegerRegex {
+        private val pattern = Pattern.compile(EntityToRESTConstants.PG_INTEGER_REGEX)
+        @Test fun matchesInteger() = assertTrue(pattern.matcher("integer").matches())
+        @Test fun matchesSmallint() = assertTrue(pattern.matcher("smallint").matches())
+        @Test fun matchesSerial() = assertTrue(pattern.matcher("serial").matches())
+        @Test fun doesNotMatchBigint() = assertFalse(pattern.matcher("bigint").matches())
+    }
+
+    @Nested
+    inner class PgBigintRegex {
+        private val pattern = Pattern.compile(EntityToRESTConstants.PG_BIGINT_REGEX)
+        @Test fun matchesBigint() = assertTrue(pattern.matcher("bigint").matches())
+        @Test fun matchesBigserial() = assertTrue(pattern.matcher("bigserial").matches())
+        @Test fun doesNotMatchInteger() = assertFalse(pattern.matcher("integer").matches())
+    }
+
+    @Nested
+    inner class PgTextRegex {
+        private val pattern = Pattern.compile(EntityToRESTConstants.PG_TEXT_REGEX)
+        @Test fun matchesText() = assertTrue(pattern.matcher("text").matches())
+    }
+
+    @Nested
+    inner class PgBooleanRegex {
+        private val pattern = Pattern.compile(EntityToRESTConstants.PG_BOOLEAN_REGEX)
+        @Test fun matchesBoolean() = assertTrue(pattern.matcher("boolean").matches())
+        @Test fun matchesBool() = assertTrue(pattern.matcher("bool").matches())
+    }
+
+    @Nested
+    inner class PgNumericRegex {
+        private val pattern = Pattern.compile(EntityToRESTConstants.PG_NUMERIC_REGEX)
+        @Test fun matchesNumeric() = assertTrue(pattern.matcher("numeric(10,2)").matches())
+        @Test fun matchesBareNumeric() = assertTrue(pattern.matcher("numeric").matches())
+    }
+
+    @Nested
+    inner class PgRealRegex {
+        private val pattern = Pattern.compile(EntityToRESTConstants.PG_REAL_REGEX)
+        @Test fun matchesReal() = assertTrue(pattern.matcher("real").matches())
+    }
+
+    @Nested
+    inner class PgDateRegex {
+        private val pattern = Pattern.compile(EntityToRESTConstants.PG_DATE_REGEX)
+        @Test fun matchesDate() = assertTrue(pattern.matcher("date").matches())
+    }
+
     // ── Constants values ───────────────────────────────────────────────
 
     @Test fun pkDataType() = assertEquals("Long", EntityToRESTConstants.PK_DATA_TYPE)
@@ -181,6 +240,7 @@ class EntityToRESTConstantsTest {
     @Test fun pkId() = assertEquals("@Id", EntityToRESTConstants.PK_ID)
     @Test fun fkId() = assertEquals("@ManyToOne", EntityToRESTConstants.FK_ID)
     @Test fun dbEscapeChar() = assertEquals("`", EntityToRESTConstants.DB_ESCAPE_CHARACTER)
+    @Test fun pgDbEscapeChar() = assertEquals("\"", EntityToRESTConstants.PG_DB_ESCAPE_CHARACTER)
     @Test fun underscore() = assertEquals("_", EntityToRESTConstants.UNDERSCORE)
     @Test fun spaceChar() = assertEquals(" ", EntityToRESTConstants.SPACE_CHAR)
 }

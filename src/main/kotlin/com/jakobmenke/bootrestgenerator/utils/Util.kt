@@ -9,58 +9,124 @@ import java.util.regex.Pattern
 object Util {
     fun parseWords(entities: MutableList<Entity>, words: MutableList<String>) {
         val pattern = Pattern.compile(EntityToRESTConstants.SUPPORTED_DATA_TYPES_REGEX)
+        val escapeChar = Globals.escapeCharacter
 
         for (i in words.indices) {
             val word = words[i]
 
             if (word.equals("create", ignoreCase = true)) {
-                val nextWord = words[i + 1]
-                if (nextWord.equals("table", ignoreCase = true)) {
-                    val tableWord = words[i + 2]
-                    val comps = tableWord.replace(EntityToRESTConstants.DB_ESCAPE_CHARACTER, "")
-                        .split(EntityToRESTConstants.UNDERSCORE)
-                    val entityName = comps.joinToString("") { w ->
-                        w.substring(0, 1).uppercase() + w.substring(1).lowercase()
+                if (i + 2 < words.size) {
+                    val nextWord = words[i + 1]
+                    if (nextWord.equals("table", ignoreCase = true)) {
+                        val tableWord = words[i + 2]
+                        val cleanName = stripSchemaAndEscape(tableWord, escapeChar)
+                        val comps = cleanName.split(EntityToRESTConstants.UNDERSCORE)
+                        val entityName = comps.joinToString("") { w ->
+                            w.substring(0, 1).uppercase() + w.substring(1).lowercase()
+                        }
+                        val entity = Entity(
+                            entityName = entityName,
+                            tableName = cleanName
+                        )
+                        entities.add(entity)
                     }
-                    val entity = Entity(
-                        entityName = entityName,
-                        tableName = tableWord.replace(EntityToRESTConstants.DB_ESCAPE_CHARACTER, "")
-                    )
-                    entities.add(entity)
                 }
             }
 
-            if (pattern.matcher(word).matches()) {
-                val columnName = words[i - 1].replace(EntityToRESTConstants.DB_ESCAPE_CHARACTER, "")
+            if (entities.isNotEmpty() && pattern.matcher(word).matches()) {
+                val columnName = words[i - 1].replace(escapeChar, "")
                 val javaType = getJavaType(word)
-                val comps = columnName.replace(EntityToRESTConstants.DB_ESCAPE_CHARACTER, "").split("_")
+                val comps = columnName.replace(escapeChar, "").split("_")
                 var camelName = comps.joinToString("") { w ->
                     w.substring(0, 1).uppercase() + w.substring(1).lowercase()
                 }
                 camelName = camelName.substring(0, 1).lowercase() + camelName.substring(1)
 
                 entities.last().columns.add(ColumnToField(columnName, camelName, word, javaType))
+
+                // SQLite inline PRIMARY KEY: "column_name TYPE PRIMARY KEY [AUTOINCREMENT]"
+                if (Globals.isSqlite && i + 2 < words.size
+                    && words[i + 1].equals("PRIMARY", ignoreCase = true)
+                    && words[i + 2].equals("KEY", ignoreCase = true)
+                ) {
+                    val entity = entities.last()
+                    val lastIdx = entity.columns.size - 1
+                    val pkColumn = ColumnToField(
+                        databaseIdType = EntityToRESTConstants.PK_ID,
+                        databaseColumnName = columnName,
+                        camelCaseFieldName = camelName.replace(Regex("[iI]d$"), ""),
+                        databaseType = null,
+                        javaType = EntityToRESTConstants.PK_DATA_TYPE
+                    )
+                    entity.columns[lastIdx] = pkColumn
+                }
             }
 
-            setPKorFKColumns(entities, words, i, word)
+            if (entities.isNotEmpty()) {
+                setPKorFKColumns(entities, words, i, word, escapeChar)
+            }
         }
     }
 
-    private fun setPKorFKColumns(entities: MutableList<Entity>, words: MutableList<String>, i: Int, word: String) {
+    private fun setPKorFKColumns(
+        entities: MutableList<Entity>,
+        words: MutableList<String>,
+        i: Int,
+        word: String,
+        escapeChar: String
+    ) {
         val keyPattern = Pattern.compile(EntityToRESTConstants.PRIMARY_FOREIGN_REGEX)
         if (keyPattern.matcher(word.uppercase()).matches()) {
-            val keyString = words.subList(i, i + 10).joinToString(" ")
-            val keyColumn = getId(keyString)
-            val entity = entities.last()
-            val columns = entity.columns
+            val endIndex = minOf(i + 10, words.size)
+            val keyString = words.subList(i, endIndex).joinToString(" ")
+            val keyColumn = getId(keyString, escapeChar)
+
+            val targetEntity = if (Globals.isPostgresql) {
+                findAlterTableEntity(entities, words, i, escapeChar) ?: entities.last()
+            } else {
+                entities.last()
+            }
+
+            val columns = targetEntity.columns
             for (j in columns.indices) {
                 val column = columns[j]
                 if (column.databaseIdType == null && column.databaseColumnName == keyColumn.databaseColumnName) {
                     keyColumn.camelCaseFieldName = column.camelCaseFieldName?.replace(Regex("[iI]d$"), "")
-                    entity.columns[j] = keyColumn
+                    targetEntity.columns[j] = keyColumn
                 }
             }
         }
+    }
+
+    private fun findAlterTableEntity(
+        entities: MutableList<Entity>,
+        words: MutableList<String>,
+        currentIndex: Int,
+        escapeChar: String
+    ): Entity? {
+        for (j in currentIndex - 1 downTo maxOf(0, currentIndex - 10)) {
+            if (words[j].equals("alter", ignoreCase = true) && j + 2 < words.size) {
+                if (words[j + 1].equals("table", ignoreCase = true)) {
+                    val tableIdx = if (j + 2 < words.size && words[j + 2].equals("only", ignoreCase = true)) j + 3 else j + 2
+                    if (tableIdx < words.size) {
+                        val tableName = stripSchemaAndEscape(words[tableIdx], escapeChar)
+                        return entities.find { it.tableName.equals(tableName, ignoreCase = true) }
+                    }
+                }
+            }
+        }
+        return null
+    }
+
+    private fun stripSchemaAndEscape(name: String, escapeChar: String): String {
+        var clean = name.replace(escapeChar, "")
+        // Remove trailing punctuation (semicolons, commas, parens)
+        clean = clean.trimEnd(';', ',', '(', ')')
+        // Remove schema prefix (e.g., "public.table_name" → "table_name")
+        if (clean.contains(".")) {
+            clean = clean.substringAfterLast(".")
+        }
+        return clean
     }
 
     fun getWords(words: MutableList<String>, inputStream: InputStream) {
@@ -78,18 +144,96 @@ object Util {
         }
     }
 
+    fun normalizePostgresqlWords(words: MutableList<String>) {
+        // First pass: strip trailing commas and semicolons from all tokens
+        for (i in words.indices) {
+            words[i] = words[i].trimEnd(';', ',')
+        }
+
+        // Second pass: combine multi-word PostgreSQL types into single tokens
+        var i = 0
+        while (i < words.size) {
+            val word = words[i].lowercase()
+            when {
+                // "character varying(n)" → "varchar(n)"
+                word == "character" && i + 1 < words.size && words[i + 1].lowercase().startsWith("varying") -> {
+                    val varying = words[i + 1]
+                    val size = varying.substringAfter("varying", "").substringAfter("VARYING", "")
+                    words[i] = "varchar$size"
+                    words.removeAt(i + 1)
+                }
+                // "timestamp/time without time zone" or "timestamp/time with time zone"
+                (word == "timestamp" || word == "time") && i + 3 < words.size
+                        && (words[i + 1].equals("without", ignoreCase = true) || words[i + 1].equals("with", ignoreCase = true))
+                        && words[i + 2].equals("time", ignoreCase = true)
+                        && words[i + 3].lowercase().startsWith("zone") -> {
+                    words.removeAt(i + 3)
+                    words.removeAt(i + 2)
+                    words.removeAt(i + 1)
+                }
+                // "double precision" → "double"
+                word == "double" && i + 1 < words.size && words[i + 1].lowercase().startsWith("precision") -> {
+                    words.removeAt(i + 1)
+                }
+            }
+            i++
+        }
+    }
+
+    fun normalizeSqliteWords(words: MutableList<String>) {
+        // First pass: strip trailing commas and semicolons
+        for (i in words.indices) {
+            words[i] = words[i].trimEnd(';', ',')
+        }
+
+        // Second pass: remove IF NOT EXISTS, PRAGMA, INSERT, BEGIN, COMMIT noise
+        var i = 0
+        while (i < words.size) {
+            val upper = words[i].uppercase()
+            when {
+                // Remove "IF NOT EXISTS" (common in SQLite CREATE TABLE IF NOT EXISTS)
+                upper == "IF" && i + 2 < words.size
+                        && words[i + 1].equals("NOT", ignoreCase = true)
+                        && words[i + 2].equals("EXISTS", ignoreCase = true) -> {
+                    words.removeAt(i + 2)
+                    words.removeAt(i + 1)
+                    words.removeAt(i)
+                }
+                // Remove PRAGMA, INSERT, BEGIN, COMMIT, DELETE statements
+                upper == "PRAGMA" || upper == "INSERT" || upper == "BEGIN"
+                        || upper == "COMMIT" || upper == "DELETE" -> {
+                    // Remove tokens until we hit a CREATE, ALTER, or end of list
+                    while (i < words.size) {
+                        val next = words[i].uppercase().trimEnd(';', ',', '(', ')')
+                        if (next == "CREATE" || next == "ALTER") break
+                        words.removeAt(i)
+                    }
+                }
+                else -> i++
+            }
+        }
+    }
+
     private fun getJavaType(datatype: String): String {
         val isKotlin = Globals.isKotlin
+        val dt = datatype.lowercase()
         return when {
-            Pattern.compile(EntityToRESTConstants.VARCHAR_REGEX).matcher(datatype).matches() -> "String"
-            Pattern.compile(EntityToRESTConstants.INT_REGEX).matcher(datatype).matches() -> if (isKotlin) "Int" else "Integer"
-            Pattern.compile(EntityToRESTConstants.BIGINT_REGEX).matcher(datatype).matches() -> "Long"
-            Pattern.compile(EntityToRESTConstants.DATETIME_REGEX).matcher(datatype).matches() -> "LocalDate"
-            Pattern.compile(EntityToRESTConstants.BIT_REGEX).matcher(datatype).matches() -> if (isKotlin) "Boolean" else "String"
-            Pattern.compile(EntityToRESTConstants.FLOAT_REGEX).matcher(datatype).matches() -> "Float"
-            Pattern.compile(EntityToRESTConstants.DOUBLE_REGEX).matcher(datatype).matches() -> "Double"
-            Pattern.compile(EntityToRESTConstants.TIME_REGEX).matcher(datatype).matches() -> "LocalTime"
-            Pattern.compile(EntityToRESTConstants.TIMESTAMP_REGEX).matcher(datatype).matches() -> "LocalDateTime"
+            Pattern.compile(EntityToRESTConstants.VARCHAR_REGEX).matcher(dt).matches() -> "String"
+            Pattern.compile(EntityToRESTConstants.PG_TEXT_REGEX).matcher(dt).matches() -> "String"
+            Pattern.compile(EntityToRESTConstants.PG_BIGINT_REGEX).matcher(dt).matches() -> "Long"
+            Pattern.compile(EntityToRESTConstants.BIGINT_REGEX).matcher(dt).matches() -> "Long"
+            Pattern.compile(EntityToRESTConstants.INT_REGEX).matcher(dt).matches() -> if (isKotlin) "Int" else "Integer"
+            Pattern.compile(EntityToRESTConstants.PG_INTEGER_REGEX).matcher(dt).matches() -> if (isKotlin) "Int" else "Integer"
+            Pattern.compile(EntityToRESTConstants.DATETIME_REGEX).matcher(dt).matches() -> "LocalDate"
+            Pattern.compile(EntityToRESTConstants.PG_DATE_REGEX).matcher(dt).matches() -> "LocalDate"
+            Pattern.compile(EntityToRESTConstants.PG_BOOLEAN_REGEX).matcher(dt).matches() -> if (isKotlin) "Boolean" else "String"
+            Pattern.compile(EntityToRESTConstants.BIT_REGEX).matcher(dt).matches() -> if (isKotlin) "Boolean" else "String"
+            Pattern.compile(EntityToRESTConstants.FLOAT_REGEX).matcher(dt).matches() -> "Float"
+            Pattern.compile(EntityToRESTConstants.PG_REAL_REGEX).matcher(dt).matches() -> "Float"
+            Pattern.compile(EntityToRESTConstants.DOUBLE_REGEX).matcher(dt).matches() -> "Double"
+            Pattern.compile(EntityToRESTConstants.PG_NUMERIC_REGEX).matcher(dt).matches() -> "Double"
+            Pattern.compile(EntityToRESTConstants.TIME_REGEX).matcher(dt).matches() -> "LocalTime"
+            Pattern.compile(EntityToRESTConstants.TIMESTAMP_REGEX).matcher(dt).matches() -> "LocalDateTime"
             else -> "String"
         }
     }
@@ -111,7 +255,7 @@ object Util {
         return buffer.toString()
     }
 
-    fun getId(key: String): ColumnToField {
+    fun getId(key: String, escapeChar: String = EntityToRESTConstants.DB_ESCAPE_CHARACTER): ColumnToField {
         var camelName: String? = null
         var dbName: String? = null
         var dataType: String? = null
@@ -124,16 +268,17 @@ object Util {
             val foreignKey = fkMatcher.group(1)
             val otherTableName = fkMatcher.group(2)
             val primaryKeyOtherTable = fkMatcher.group(3)
-            javaType = firstLetterToCaps(camelName(otherTableName.replace(EntityToRESTConstants.DB_ESCAPE_CHARACTER, "")))
-            camelName = camelName(foreignKey.replace(EntityToRESTConstants.DB_ESCAPE_CHARACTER, ""))
-            dbName = primaryKeyOtherTable.replace(EntityToRESTConstants.DB_ESCAPE_CHARACTER, "")
+            val cleanTableName = stripSchemaAndEscape(otherTableName, escapeChar)
+            javaType = firstLetterToCaps(camelName(cleanTableName))
+            camelName = camelName(foreignKey.replace(escapeChar, ""))
+            dbName = primaryKeyOtherTable.replace(escapeChar, "")
         }
 
         val pkPattern = Pattern.compile(EntityToRESTConstants.PRIMARY_KEY_S_S)
         val pkMatcher = pkPattern.matcher(key)
         if (pkMatcher.matches()) {
             idType = EntityToRESTConstants.PK_ID
-            dbName = pkMatcher.group(1).replace(EntityToRESTConstants.DB_ESCAPE_CHARACTER, "")
+            dbName = pkMatcher.group(1).replace(escapeChar, "")
             javaType = EntityToRESTConstants.PK_DATA_TYPE
         } else {
             idType = EntityToRESTConstants.FK_ID

@@ -7,14 +7,16 @@ data class Configuration(
     val srcFolder: String,
     val targetPackage: String,
     val fileName: String,
-    val language: String = "java"
+    val language: String = "java",
+    val databaseType: String = "mysql"
 ) {
     constructor(props: Properties) : this(
         srcFolder = props.getProperty("target.folder")
             ?: defaultFolderForLanguage(props.getProperty("target.language", "java")),
         targetPackage = props.getProperty("target.package"),
         fileName = props.getProperty("file.name"),
-        language = props.getProperty("target.language", "java")
+        language = props.getProperty("target.language", "java"),
+        databaseType = props.getProperty("database.type", "mysql")
     )
 
     companion object {

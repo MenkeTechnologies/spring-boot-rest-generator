@@ -14,6 +14,7 @@ fun main() {
     Globals.SRC_FOLDER = configuration.srcFolder
     Globals.FILE_NAME = configuration.fileName
     Globals.LANGUAGE = configuration.language
+    Globals.DB_TYPE = configuration.databaseType
 
     val entities = mutableListOf<Entity>()
     val words = mutableListOf<String>()
