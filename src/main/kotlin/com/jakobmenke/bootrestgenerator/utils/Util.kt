@@ -4,11 +4,9 @@ import com.jakobmenke.bootrestgenerator.dto.ColumnToField
 import com.jakobmenke.bootrestgenerator.dto.Entity
 import java.io.InputStream
 import java.util.Scanner
-import java.util.regex.Pattern
-
 object Util {
     fun parseWords(entities: MutableList<Entity>, words: MutableList<String>) {
-        val pattern = Pattern.compile(EntityToRESTConstants.SUPPORTED_DATA_TYPES_REGEX)
+        val pattern = EntityToRESTConstants.SUPPORTED_DATA_TYPES_PATTERN
         val escapeChar = Globals.escapeCharacter
 
         for (i in words.indices) {
@@ -87,7 +85,7 @@ object Util {
         word: String,
         escapeChar: String
     ) {
-        val keyPattern = Pattern.compile(EntityToRESTConstants.PRIMARY_FOREIGN_REGEX)
+        val keyPattern = EntityToRESTConstants.PRIMARY_FOREIGN_PATTERN
         if (keyPattern.matcher(word.uppercase()).matches()) {
             val endIndex = minOf(i + 10, words.size)
             val keyString = words.subList(i, endIndex).joinToString(" ")
@@ -280,28 +278,28 @@ object Util {
         val isKotlin = Globals.isKotlin
         val dt = datatype.lowercase()
         return when {
-            Pattern.compile(EntityToRESTConstants.VARCHAR_REGEX).matcher(dt).matches() -> "String"
-            Pattern.compile(EntityToRESTConstants.MSSQL_NVARCHAR_REGEX).matcher(dt).matches() -> "String"
-            Pattern.compile(EntityToRESTConstants.PG_TEXT_REGEX).matcher(dt).matches() -> "String"
-            Pattern.compile(EntityToRESTConstants.MSSQL_UNIQUEIDENTIFIER_REGEX).matcher(dt).matches() -> "String"
-            Pattern.compile(EntityToRESTConstants.MSSQL_IMAGE_REGEX).matcher(dt).matches() -> "String"
-            Pattern.compile(EntityToRESTConstants.PG_BIGINT_REGEX).matcher(dt).matches() -> "Long"
-            Pattern.compile(EntityToRESTConstants.BIGINT_REGEX).matcher(dt).matches() -> "Long"
-            Pattern.compile(EntityToRESTConstants.INT_REGEX).matcher(dt).matches() -> if (isKotlin) "Int" else "Integer"
-            Pattern.compile(EntityToRESTConstants.PG_INTEGER_REGEX).matcher(dt).matches() -> if (isKotlin) "Int" else "Integer"
-            Pattern.compile(EntityToRESTConstants.MSSQL_DATETIME2_REGEX).matcher(dt).matches() -> "LocalDateTime"
-            Pattern.compile(EntityToRESTConstants.DATETIME_REGEX).matcher(dt).matches() -> "LocalDate"
-            Pattern.compile(EntityToRESTConstants.PG_DATE_REGEX).matcher(dt).matches() -> "LocalDate"
-            Pattern.compile(EntityToRESTConstants.PG_BOOLEAN_REGEX).matcher(dt).matches() -> if (isKotlin) "Boolean" else "String"
-            Pattern.compile(EntityToRESTConstants.BIT_REGEX).matcher(dt).matches() -> if (isKotlin) "Boolean" else "String"
-            Pattern.compile(EntityToRESTConstants.FLOAT_REGEX).matcher(dt).matches() -> "Float"
-            Pattern.compile(EntityToRESTConstants.PG_REAL_REGEX).matcher(dt).matches() -> "Float"
-            Pattern.compile(EntityToRESTConstants.DOUBLE_REGEX).matcher(dt).matches() -> "Double"
-            Pattern.compile(EntityToRESTConstants.PG_NUMERIC_REGEX).matcher(dt).matches() -> "Double"
-            Pattern.compile(EntityToRESTConstants.MSSQL_DECIMAL_REGEX).matcher(dt).matches() -> "Double"
-            Pattern.compile(EntityToRESTConstants.MSSQL_MONEY_REGEX).matcher(dt).matches() -> "Double"
-            Pattern.compile(EntityToRESTConstants.TIME_REGEX).matcher(dt).matches() -> "LocalTime"
-            Pattern.compile(EntityToRESTConstants.TIMESTAMP_REGEX).matcher(dt).matches() -> "LocalDateTime"
+            EntityToRESTConstants.VARCHAR_PATTERN.matcher(dt).matches() -> "String"
+            EntityToRESTConstants.MSSQL_NVARCHAR_PATTERN.matcher(dt).matches() -> "String"
+            EntityToRESTConstants.PG_TEXT_PATTERN.matcher(dt).matches() -> "String"
+            EntityToRESTConstants.MSSQL_UNIQUEIDENTIFIER_PATTERN.matcher(dt).matches() -> "String"
+            EntityToRESTConstants.MSSQL_IMAGE_PATTERN.matcher(dt).matches() -> "String"
+            EntityToRESTConstants.PG_BIGINT_PATTERN.matcher(dt).matches() -> "Long"
+            EntityToRESTConstants.BIGINT_PATTERN.matcher(dt).matches() -> "Long"
+            EntityToRESTConstants.INT_PATTERN.matcher(dt).matches() -> if (isKotlin) "Int" else "Integer"
+            EntityToRESTConstants.PG_INTEGER_PATTERN.matcher(dt).matches() -> if (isKotlin) "Int" else "Integer"
+            EntityToRESTConstants.MSSQL_DATETIME2_PATTERN.matcher(dt).matches() -> "LocalDateTime"
+            EntityToRESTConstants.DATETIME_PATTERN.matcher(dt).matches() -> "LocalDate"
+            EntityToRESTConstants.PG_DATE_PATTERN.matcher(dt).matches() -> "LocalDate"
+            EntityToRESTConstants.PG_BOOLEAN_PATTERN.matcher(dt).matches() -> if (isKotlin) "Boolean" else "String"
+            EntityToRESTConstants.BIT_PATTERN.matcher(dt).matches() -> if (isKotlin) "Boolean" else "String"
+            EntityToRESTConstants.FLOAT_PATTERN.matcher(dt).matches() -> "Float"
+            EntityToRESTConstants.PG_REAL_PATTERN.matcher(dt).matches() -> "Float"
+            EntityToRESTConstants.DOUBLE_PATTERN.matcher(dt).matches() -> "Double"
+            EntityToRESTConstants.PG_NUMERIC_PATTERN.matcher(dt).matches() -> "Double"
+            EntityToRESTConstants.MSSQL_DECIMAL_PATTERN.matcher(dt).matches() -> "Double"
+            EntityToRESTConstants.MSSQL_MONEY_PATTERN.matcher(dt).matches() -> "Double"
+            EntityToRESTConstants.TIME_PATTERN.matcher(dt).matches() -> "LocalTime"
+            EntityToRESTConstants.TIMESTAMP_PATTERN.matcher(dt).matches() -> "LocalDateTime"
             else -> "String"
         }
     }
@@ -316,7 +314,11 @@ object Util {
         var i = 0
         while (i < buffer.length) {
             if (buffer[i] == '_') {
-                buffer.replace(i, i + 2, buffer.substring(i + 1, i + 2).uppercase())
+                if (i + 1 < buffer.length) {
+                    buffer.replace(i, i + 2, buffer.substring(i + 1, i + 2).uppercase())
+                } else {
+                    buffer.deleteCharAt(i)
+                }
             }
             i++
         }
@@ -330,8 +332,7 @@ object Util {
         var javaType: String? = null
         val idType: String
 
-        val fkPattern = Pattern.compile(EntityToRESTConstants.FOREIGN_KEY_REFERENCES_REGEX)
-        val fkMatcher = fkPattern.matcher(key)
+        val fkMatcher = EntityToRESTConstants.FOREIGN_KEY_REFERENCES_PATTERN.matcher(key)
         if (fkMatcher.find()) {
             val foreignKey = fkMatcher.group(1)
             val otherTableName = fkMatcher.group(2)
@@ -342,8 +343,7 @@ object Util {
             dbName = primaryKeyOtherTable.replace(escapeChar, "")
         }
 
-        val pkPattern = Pattern.compile(EntityToRESTConstants.PRIMARY_KEY_S_S)
-        val pkMatcher = pkPattern.matcher(key)
+        val pkMatcher = EntityToRESTConstants.PRIMARY_KEY_PATTERN.matcher(key)
         if (pkMatcher.matches()) {
             idType = EntityToRESTConstants.PK_ID
             dbName = pkMatcher.group(1).replace(escapeChar, "").trim()
