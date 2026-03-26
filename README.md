@@ -294,6 +294,52 @@ src/main/resources/templates/
 ./gradlew test
 ```
 
+### Test Suite Overview
+
+**500+ tests** across **28 test classes** covering unit, template, and integration layers.
+
+| Category | Test Class | Tests | What It Covers |
+|----------|-----------|-------|----------------|
+| **Unit** | `MainTest` | 6 | PK/FK identification, string capitalization, camelCase conversion |
+| **Unit** | `UtilTest` | 36+ | `firstLetterToCaps`, `camelName`, `getId`, `getWords`, `parseWords` |
+| **Unit** | `KotlinUtilTest` | 15+ | Kotlin type mapping (`Int` vs `Integer`, `Boolean` vs `String`), PK/FK types |
+| **Unit** | `GroovyUtilTest` | 30+ | Groovy type mapping (matches Java types), cross-database type handling |
+| **Unit** | `ColumnToFieldTest` | 8 | `ColumnToField` data class constructors, equality, copy, mutability |
+| **Unit** | `EntityTest` | 8 | `Entity` data class constructors, properties, column management |
+| **Unit** | `EntityToRESTConstantsTest` | 50+ | Regex patterns for all SQL types, PK/FK parsing, MySQL/PG/SQLite/MSSQL type regexes |
+| **Unit** | `EdgeCaseParsingTest` | 40+ | Empty input, special characters, self-referencing FKs, large names, multi-table edge cases |
+| **Unit** | `ConfigurationTest` | 15 | Config file loading, language-specific default folders, fallback behavior |
+| **Unit** | `KotlinConfigurationTest` | 9 | Kotlin language property, global flags, case-insensitive matching |
+| **Unit** | `GroovyConfigurationTest` | 8 | Groovy language property, global flags, mutual exclusion with Kotlin |
+| **Template** | `TemplatesTest` | 50+ | Java templates: entities, DAOs, repositories, REST resources, package declarations |
+| **Template** | `KotlinTemplatesTest` | 50+ | Kotlin templates: colon inheritance, constructor injection, `val`/`var`, no Lombok |
+| **Template** | `GroovyTemplatesTest` | 60+ | Groovy templates: `@Canonical`, `@Autowired`, `implements`, no Lombok |
+| **Template** | `KotlinEntityFieldDefaultsTest` | 20+ | Kotlin field defaults (`""`, `0`, `0L`, `false`), nullable types, Java mode guard |
+| **Template** | `GroovyEntityFieldsTest` | 15+ | Groovy field declarations without defaults or nullable types, language comparison |
+| **Template** | `RestRepositoryTemplateTest` | 7 | `@RepositoryRestResource` annotation, Spring Data REST imports |
+| **Integration** | `FullPipelineTest` | 25+ | End-to-end MySQL: parse 18 entities, validate columns/keys/types, write all files |
+| **Integration** | `PostgresqlPipelineTest` | 30+ | PostgreSQL pipeline: `ALTER TABLE` constraints, PG type mappings, cross-language |
+| **Integration** | `SqlitePipelineTest` | 25+ | SQLite pipeline: inline PKs, `.dump` noise filtering (`INSERT`, `PRAGMA`, `BEGIN`) |
+| **Integration** | `MssqlPipelineTest` | 30+ | MSSQL pipeline: `[bracket]` stripping, `SET`/`GO` filtering, MSSQL type mappings |
+| **Integration** | `KotlinPipelineTest` | 20+ | Kotlin pipeline: type mapping, `.kt` file generation, template content |
+| **Integration** | `GroovyPipelineTest` | 20+ | Groovy pipeline: type mapping, `.groovy` file generation, `@Canonical` templates |
+| **Integration** | `CustomSqlParsingTest` | 14 | Complex SQL: mixed comments, multi-FK tables, every data type, end-to-end template gen |
+| **Integration** | `EmptyEntityListTest` | 15+ | Empty entity lists, single entity generation, deep package paths |
+| **Integration** | `KotlinContentValidationTest` | 16 | Generated Kotlin files: no Java artifacts, no placeholders, correct idioms |
+| **Integration** | `GroovyContentValidationTest` | 20+ | Generated Groovy files: no Java/Kotlin artifacts, pure Groovy syntax |
+| **Integration** | `CrossDatabaseLanguageTest` | 20+ | All 12 db/language combos (4 databases x 3 languages), parameterized matrix |
+
+### Coverage Matrix
+
+```
+              MySQL   PostgreSQL   SQLite   MSSQL
+           +--------+------------+--------+--------+
+Java       |   ✓    |     ✓      |   ✓    |   ✓    |
+Kotlin     |   ✓    |     ✓      |   ✓    |   ✓    |
+Groovy     |   ✓    |     ✓      |   ✓    |   ✓    |
+           +--------+------------+--------+--------+
+```
+
 ---
 
 <p align="center">
