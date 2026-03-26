@@ -32,9 +32,10 @@ No boilerplate. No hand-wiring. Just schema in, API out.
 [x] Generate REST controllers (GET / POST / PUT / DELETE)
 [x] Generate DAO service layer with GenericDao pattern
 [x] Generate Spring Data JPA repositories
-[x] Map MySQL types --> Java types (varchar->String, bigint->Long, datetime->LocalDateTime, ...)
+[x] Map MySQL types --> Java/Kotlin types (varchar->String, bigint->Long, datetime->LocalDateTime, ...)
 [x] Lombok-powered: @Data, @Builder, @AllArgsConstructor, @NoArgsConstructor
 [x] snake_case tables --> PascalCase entities, camelCase fields
+[x] Template-driven codegen with {{placeholder}} substitution
 ```
 
 ---
@@ -43,11 +44,12 @@ No boilerplate. No hand-wiring. Just schema in, API out.
 
 | Layer          | Tech                          |
 |----------------|-------------------------------|
-| Runtime        | Java 8                        |
-| Framework      | Spring Boot 2.1.4             |
-| ORM            | Spring Data JPA               |
-| Build          | Maven                         |
-| Boilerplate    | Lombok 1.18.8                 |
+| Language       | Kotlin 2.1.10                 |
+| Runtime        | Java 23                       |
+| Framework      | Spring Boot 3.4.4             |
+| ORM            | Spring Data JPA (Jakarta)     |
+| Build          | Gradle 9.4.1 (Kotlin DSL)    |
+| Boilerplate    | Lombok                        |
 | Tests          | JUnit 5                       |
 | DB Support     | MySQL DDL                     |
 
@@ -71,28 +73,32 @@ Place your MySQL DDL dump file in `src/main/resources/`.
 
 ### 3. Execute
 
-Run `Main.main()`. Watch the grid light up.
+```bash
+./gradlew run
+```
+
+Or run `Main.main()` from your IDE. Watch the grid light up.
 
 ---
 
 ## `> OUTPUT MATRIX`
 
 ```
-target.folder/
+{target.folder}/{target.package}/
  |-- entity/
- |    |-- User.java
+ |    |-- User.java           @Entity @Data @Table @Column @Id @ManyToOne
  |    |-- Module.java
  |    \-- ...
  |-- rest/
- |    |-- UserResource.java
+ |    |-- UserResource.java   @RestController with full CRUD
  |    |-- ModuleResource.java
  |    \-- ...
  |-- dao/
- |    |-- UserDao.java
- |    |-- GenericDao.java
+ |    |-- UserDao.java        @Service implementing GenericDao<T>
+ |    |-- GenericDao.java     Generic interface for all DAOs
  |    \-- ...
  |-- repository/
- |    |-- UserRepository.java
+ |    |-- UserRepository.java extends JpaRepository<T, Long>
  |    \-- ...
  \-- utils/
       \-- GlobalConstants.java
@@ -118,15 +124,15 @@ DELETE  /api/v1/{entity}        // flatline all
 ## `> TYPE MAPPING`
 
 ```
-MySQL              -->   Java
+MySQL              -->   Java/Kotlin
 -----------------------------------------
 int, tinyint       -->   Integer
 bigint             -->   Long
 varchar            -->   String
 float              -->   Float
 double             -->   Double
-datetime           -->   LocalDateTime
-timestamp          -->   LocalDate
+datetime           -->   LocalDate
+timestamp          -->   LocalDateTime
 time               -->   LocalTime
 bit                -->   String
 PRIMARY KEY        -->   Long (default)
@@ -141,16 +147,44 @@ FOREIGN KEY        -->   Integer (default)
  dump.sql
     |
     v
- [ TOKENIZER ] -- strips comments, splits words
+ [ TOKENIZER ] -- strips comments (#, --), splits tokens     (Util.getWords)
     |
     v
- [ PARSER ] -- detects CREATE TABLE, columns, keys
+ [ PARSER ] -- detects CREATE TABLE, columns, keys           (Util.parseWords)
     |
     v
- [ TEMPLATE ENGINE ] -- fills {{entityName}}, {{tableName}}, {{fields}}
+ [ TEMPLATE ENGINE ] -- fills {{entityName}}, {{fields}}, .. (Templates.kt)
     |
     v
- [ FILE WRITER ] -- outputs layered Spring Boot project
+ [ FILE WRITER ] -- outputs layered Spring Boot project      (Main.kt)
+```
+
+---
+
+## `> PROJECT STRUCTURE`
+
+```
+src/main/kotlin/com/jakobmenke/bootrestgenerator/
+ |-- Main.kt                          Entry point & file writer
+ |-- dto/
+ |    |-- Entity.kt                   Entity data model
+ |    \-- ColumnToField.kt            Column-to-field mapping
+ |-- templates/
+ |    \-- Templates.kt                Template engine & replacements
+ \-- utils/
+      |-- Configuration.kt            Config reader
+      |-- Util.kt                     Parser, type mapper, key detector
+      |-- EntityToRESTConstants.kt    Regex patterns & constants
+      \-- Globals.kt                  Global state holder
+
+src/main/resources/templates/
+ |-- entity.tmpl                      JPA Entity template
+ |-- rest.resource.tmpl               REST Controller template
+ |-- dao.tmpl                         Service/DAO template
+ |-- repository.tmpl                  Spring Data JPA interface
+ |-- genericdao.tmpl                  Generic DAO interface
+ |-- constants.tmpl                   Global constants
+ \-- restrepository.tmpl              Alternative REST template
 ```
 
 ---
