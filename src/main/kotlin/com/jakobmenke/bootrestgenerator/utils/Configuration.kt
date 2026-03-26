@@ -7,13 +7,13 @@ data class Configuration(
     val srcFolder: String,
     val targetPackage: String,
     val fileName: String,
-    val language: String = "kotlin"
+    val language: String = "java"
 ) {
     constructor(props: Properties) : this(
         srcFolder = props.getProperty("target.folder"),
         targetPackage = props.getProperty("target.package"),
         fileName = props.getProperty("file.name"),
-        language = props.getProperty("target.language", "kotlin")
+        language = props.getProperty("target.language", "java")
     )
 
     companion object {
