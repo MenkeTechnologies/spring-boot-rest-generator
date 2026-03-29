@@ -1,3 +1,5 @@
+[![CI](https://github.com/MenkeTechnologies/spring-boot-rest-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/MenkeTechnologies/spring-boot-rest-generator/actions/workflows/ci.yml)
+
 ```
  ___  ____  ____  ____  _  _  ___    ____  _____  _____  ____
 / __)(  _ \(  _ \(_  _)( \( )/ __)  (  _ \(  _  )(  _  )(_  _)
