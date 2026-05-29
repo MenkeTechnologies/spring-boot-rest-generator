@@ -1,0 +1,381 @@
+.\" spring-boot-rest-generatorall(1) — comprehensive all-in-one man page
+.\" Modeled after zshall(1): every reference section in one document.
+.\" Render with:  man -l man/man1/spring-boot-rest-generatorall.1
+.\" Install:      cp man/man1/spring-boot-rest-generatorall.1 /usr/local/share/man/man1/
+.TH SPRING-BOOT-REST-GENERATORALL 1 "May 2026" "spring-boot-rest-generator 0.2.0" "User Commands"
+.SH NAME
+spring-boot-rest-generatorall \- the spring-boot-rest-generator comprehensive
+reference (architecture, configuration, DDL dialects, type mapping,
+template grammar, port discipline)
+.SH OVERVIEW
+This is the all-in-one
+.B spring-boot-rest-generator
+manual, modeled on
+.BR zshall (1).
+It concatenates every section so you can grep with `/`:
+.RS 2
+.PP
+.B 1.  WHAT IT DOES
+.RB "\(em " "schema in, fully-wired Spring Boot REST backend out"
+.br
+.B 2.  ARCHITECTURE
+.RB "\(em " "Rust port of Kotlin source — module breakdown"
+.br
+.B 3.  CONFIGURATION
+.RB "\(em " "config.properties key reference"
+.br
+.B 4.  DDL DIALECT NORMALISATION
+.RB "\(em " "MySQL, PostgreSQL, SQLite, MSSQL specifics"
+.br
+.B 5.  TYPE MAPPING
+.RB "\(em " "every DDL type to every JVM target language"
+.br
+.B 6.  TEMPLATE GRAMMAR
+.RB "\(em " "{{placeholder}} substitution, per-language subdirs"
+.br
+.B 7.  PRIMARY KEY + FOREIGN KEY HANDLING
+.br
+.B 8.  KOTLIN VS JAVA OUTPUT DIFFERENCES
+.br
+.B 9.  PORT DISCIPLINE (Kotlin reference preserved)
+.br
+.B 10. TESTS &amp; PARITY
+.br
+.B 11. EXAMPLES
+.br
+.B 12. SEE ALSO
+.RE
+
+.SH 1. WHAT IT DOES
+Feed
+.B spring-boot-rest-generator
+a raw SQL DDL dump (\fIpg_dump\fR / \fImysqldump\fR / SQLite
+.B .dump
+/ SSMS Generate Scripts) and it emits a fully wired Spring Boot REST
+backend at the configured target package:
+.RS 2
+.IP \(bu 2
+.B JPA entities
+with
+.IR @Id ,
+.IR @ManyToOne ,
+.I @JoinColumn
+annotations
+.IP \(bu 2
+.B REST controllers
+(GET / POST / PUT / DELETE) for each entity
+.IP \(bu 2
+.B DAO service layer
+using a
+.B GenericDao
+pattern
+.IP \(bu 2
+.B Spring Data JPA repositories
+for each entity
+.IP \(bu 2
+.B Constants module
+(GlobalConstants) with the CONTEXT_PATH and shared enums
+.RE
+.PP
+Output language is configurable: Java (Lombok), Kotlin (constructor
+injection + var properties), Groovy (\fI@Canonical\fR).
+
+.SH 2. ARCHITECTURE
+The Rust port lives under
+.RB \(aq src/ \(aq;
+the original Kotlin source under
+.RB \(aq src/main/kotlin/ \(aq
+is preserved for reference and side-by-side verification. Module map:
+.RS 4
+.IP \(bu 2
+.B src/lib.rs
+\(em re-exports the seven modules
+.IP \(bu 2
+.B src/entity.rs
+\(em
+.B Entity " + " ColumnToField
+data types (1:1 port of
+.BR dto/Entity.kt " + " dto/ColumnToField.kt )
+.IP \(bu 2
+.B src/constants.rs
+\(em magic strings + 22 pre-compiled
+.B regex::Regex
+patterns (port of
+.BR utils/EntityToRESTConstants.kt )
+.IP \(bu 2
+.B src/globals.rs
+\(em process-wide config (language, db_type, package) via RwLock<GlobalsInner>
+.IP \(bu 2
+.B src/config.rs
+\(em
+.B .properties
+file reader (uses
+.IR java-properties
+crate)
+.IP \(bu 2
+.B src/normalize.rs
+\(em per-DB word-stream normalisation
+(\fInormalize_postgresql_words\fR,
+.IR normalize_sqlite_words ,
+.IR normalize_mssql_words )
+.IP \(bu 2
+.B src/parser.rs
+\(em the SQL word tokeniser + entity extractor (port of
+.BR utils/Util.kt )
+.IP \(bu 2
+.B src/templates.rs
+\(em template loader + renderer (port of
+.BR templates/Templates.kt )
+.IP \(bu 2
+.B src/bin/main.rs
+\(em entry point (port of
+.BR Main.kt )
+.RE
+
+.SH 3. CONFIGURATION
+.B src/main/resources/config.properties
+keys (all required unless noted):
+.TP
+.B target.folder
+Output root, e.g.
+.RB \(aq build/generated/ \(aq.
+Optional; defaults to
+.RB \(aq build/generated/src/main/<lang>/ \(aq.
+.TP
+.B target.package
+Java/Kotlin/Groovy package as a forward-slash path
+(\fIcom/example/generated\fR).
+.TP
+.B file.name
+DDL file relative to
+.RB \(aq src/main/resources/ \(aq.
+.TP
+.B target.language
+.BR java " | " kotlin " | " groovy
+(default
+.BR java ).
+.TP
+.B database.type
+.BR mysql " | " postgresql " | " sqlite " | " mssql
+(default
+.BR mysql ).
+
+.SH 4. DDL DIALECT NORMALISATION
+Each dialect runs a per-DB pre-pass before the main parser sees the
+tokens. See
+.BR spring-boot-rest-generator (1)
+for the per-dialect feature matrix. Implementation lives in
+.B src/normalize.rs:
+.RS 4
+.IP \(bu 2
+.B normalize_postgresql_words
+\(em handles
+.IR "character varying" ,
+.IR "timestamp [without|with] time zone" ,
+.IR "double precision" ,
+strips trailing
+.RB \(aq ; \(aq " / " \(aq , \(aq.
+.IP \(bu 2
+.B normalize_sqlite_words
+\(em strips
+.IR "IF NOT EXISTS" ,
+drops
+.IR PRAGMA / INSERT / BEGIN / COMMIT / DELETE
+statement runs.
+.IP \(bu 2
+.B normalize_mssql_words
+\(em strips
+.RB \(aq [bracket] \(aq
+escapes, folds
+.RB \(aq (max) \(aq
+qualifiers, drops
+.IR IDENTITY (n,n),
+.IR CLUSTERED / NONCLUSTERED / ASC / DESC ,
+.IR SET / USE / GO / EXEC / PRINT / IF / DROP / BEGIN / END
+statement runs.
+.RE
+
+.SH 5. TYPE MAPPING
+Full per-dialect type table:
+.PP
+.RS 4
+.TS
+tab(|);
+l l l.
+DDL type | Java | Kotlin
+=
+varchar(n)/text | String | String
+nvarchar/nchar/ntext/char | String | String
+uniqueidentifier | String | String
+image/xml | String | String
+int/tinyint | Integer | Int
+integer/smallint/serial | Integer | Int
+bigint/bigserial | Long | Long
+float/real | Float | Float
+double/numeric/decimal/money | Double | Double
+datetime/date | LocalDate | LocalDate
+datetime2/timestamp/datetimeoffset | LocalDateTime | LocalDateTime
+time | LocalTime | LocalTime
+bit/boolean | String | Boolean
+.TE
+.RE
+.PP
+Kotlin emits the more precise types (\fIInt\fR vs Java's
+.IR Integer ,
+.I Boolean
+vs Java's
+.IR String );
+Groovy mirrors Java.
+
+.SH 6. TEMPLATE GRAMMAR
+Templates live under
+.RB \(aq src/main/resources/templates/ \(aq
+with per-language subdirs
+.RB ( templates/kotlin/ " + " templates/groovy/ ).
+The renderer substitutes:
+.RS 4
+.IP \(bu 2
+.B {{mainPackageName}}
+\(em dotted package
+.RB ( com.example.generated )
+.IP \(bu 2
+.B {{entityName}}
+\(em PascalCase entity class name
+.RB ( Post )
+.IP \(bu 2
+.B {{tableName}}
+\(em raw table name
+.RB ( post )
+.IP \(bu 2
+.B {{serviceName}}
+\(em lowercase entity name
+.RB ( post )
+.IP \(bu 2
+.B {{camelRepositoryName}}
+\(em camelCase repository field
+.RB ( postRepository )
+.IP \(bu 2
+.B {{primaryKeyType}}
+\(em
+.B Long
+(constant per
+.IR PK_DATA_TYPE )
+.IP \(bu 2
+.B {{restServicePrefix}}
+\(em
+.B GlobalConstants.CONTEXT_PATH
+.RE
+
+.SH 7. PRIMARY KEY + FOREIGN KEY HANDLING
+The parser walks the token stream looking for
+.B PRIMARY KEY (col)
+and
+.B FOREIGN KEY (col) REFERENCES other_table(other_col)
+clauses. When found, it rewrites the matching column's
+.IR ColumnToField .
+camel_case_field_name (stripping any trailing
+.RB \(aq Id \(aq " or " \(aq id \(aq)
+and sets
+.I database_id_type
+to
+.RB \(aq @Id \(aq " or " \(aq @ManyToOne \(aq.
+PostgreSQL
+.B ALTER TABLE
+constraints are tracked back to the right entity via
+.B find_alter_table_entity
+which scans the prior 10 tokens for an
+.B ALTER TABLE
+clause.
+
+.SH 8. KOTLIN VS JAVA OUTPUT DIFFERENCES
+.RS 4
+.IP \(bu 2
+.B Field declarations
+\(em Kotlin uses
+.B var name: Type = default
+with sensible defaults
+.RB ( "0L" " for " Long ", " "\"\"" " for " String );
+Java uses
+.B private Type name;
++ Lombok-generated getters/setters via
+.IR @Data .
+.IP \(bu 2
+.B Nullability
+\(em Kotlin date/time fields are emitted as
+.B Type? = null
+(JPA requires nullable defaults); Java leaves them as plain
+.B private Type field
+references.
+.IP \(bu 2
+.B Bit/Boolean
+\(em Java treats
+.B bit
+as
+.B String
+(matches legacy JDBC); Kotlin uses
+.BR Boolean .
+.RE
+
+.SH 9. PORT DISCIPLINE
+The Kotlin source under
+.RB \(aq src/main/kotlin/com/jakobmenke/bootrestgenerator/ \(aq
+is the reference. Rust ports preserve the upstream type/function shape:
+the 8-argument
+.B list_segment_key_values
+signature, the 5-element
+.B get_string
+tuple return, the tuple-key cache shape \(em even where Rust idiom
+would suggest a struct \(em so reviewers can diff Kotlin vs Rust
+side-by-side. Where clippy fires on these intentional shapes, targeted
+.B #[allow]
+attributes carry an explanation.
+
+.SH 10. TESTS &amp; PARITY
+.B tests/parity_smoke.rs
+runs the full
+.B DDL \(-> Vec<Entity>
+pipeline against each of the four bundled dialect fixtures
+.RB ( mysql_dump.sql ,
+.IR pg_dump.sql ,
+.IR sqlite_dump.sql ,
+.IR mssql_dump.sql )
+and pins shape invariants matching what the Kotlin
+.B MainTest
+verifies:
+.RS 4
+.IP \(bu 2
+Each dialect produces >= 1 entity
+.IP \(bu 2
+Every entity has >= 1 column
+.IP \(bu 2
+Entity names are PascalCase
+.IP \(bu 2
+At least one
+.B @Id
+appears
+.IP \(bu 2
+At least one
+.B @ManyToOne
+appears
+.IP \(bu 2
+Kotlin mode emits
+.B Int
+not
+.B Integer
+.RE
+.PP
+Run with:
+.RS 4
+.B cargo test --locked
+.RE
+
+.SH 11. EXAMPLES
+See
+.BR spring-boot-rest-generator (1)
+for invocation examples.
+
+.SH 12. SEE ALSO
+.BR spring-boot-rest-generator (1),
+.BR pg_dump (1),
+.BR mysqldump (1),
+.BR sqlite3 (1)

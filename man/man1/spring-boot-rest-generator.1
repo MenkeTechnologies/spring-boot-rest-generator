@@ -1,0 +1,195 @@
+.\" Manpage for spring-boot-rest-generator.
+.\" Contact https://github.com/MenkeTechnologies/spring-boot-rest-generator to correct errors.
+.TH SPRING-BOOT-REST-GENERATOR 1 "2026-05-29" "spring-boot-rest-generator 0.2.0" "User Commands"
+.SH NAME
+spring-boot-rest-generator \- generate a Spring Boot REST API (entities, controllers, DAOs, repositories) from a SQL DDL dump
+.SH SYNOPSIS
+.B spring-boot-rest-generator
+.SH DESCRIPTION
+.B spring-boot-rest-generator
+parses a raw MySQL, PostgreSQL, SQLite, or MSSQL DDL dump and emits a
+fully wired Spring Boot REST API \(em JPA entities (\fI@Id\fR,
+\fI@ManyToOne\fR, \fI@JoinColumn\fR), REST controllers (GET / POST / PUT /
+DELETE), DAO service layer (GenericDao pattern), and Spring Data JPA
+repositories \(em in Java, Kotlin, or Groovy.
+.PP
+This is the Rust port (v0.2.0+) of the original Kotlin implementation;
+the upstream Kotlin source is preserved under
+.RB \(aq src/main/kotlin/ \(aq
+for reference. The Rust port reuses the same Mustache-style templates
+under
+.RB \(aq src/main/resources/templates/ \(aq
+so output is byte-compatible with the Kotlin generator's existing
+templates.
+.SH USAGE
+The binary takes no command-line arguments. Configure via
+.RB \(aq src/main/resources/config.properties \(aq
+then run:
+.PP
+.RS 4
+.B spring-boot-rest-generator
+.RE
+.SH CONFIGURATION
+.B src/main/resources/config.properties
+keys:
+.TP
+.B target.folder
+Output directory root, e.g.
+.RB \(aq build/generated/ \(aq.
+Defaults to a language-specific path under
+.RB \(aq build/generated/src/main/<lang>/ \(aq.
+.TP
+.B target.package
+Java/Kotlin/Groovy package as a forward-slash path, e.g.
+.RB \(aq com/example/generated \(aq.
+.TP
+.B file.name
+DDL source file (relative to
+.RB \(aq src/main/resources/ \(aq),
+e.g.
+.RB \(aq mysql_dump.sql \(aq.
+.TP
+.B target.language
+.BR java " | " kotlin " | " groovy
+(default
+.BR java ).
+.TP
+.B database.type
+.BR mysql " | " postgresql " | " sqlite " | " mssql
+(default
+.BR mysql ).
+.SH DDL DIALECT SUPPORT
+.TP
+.B MySQL
+Standard
+.B CREATE TABLE
+statements with backtick identifier escapes.
+.TP
+.B PostgreSQL
+.B pg_dump
+compatible: handles
+.BR "ALTER TABLE \fI...\fR ADD CONSTRAINT" ,
+.BR "character varying(n)" " (normalised to " "varchar(n)" "),"
+.BR "timestamp [with|without] time zone" ,
+.BR "double precision" ,
+and schema-prefixed names
+.RB ( public.users ).
+.TP
+.B SQLite
+.B .dump
+compatible: strips
+.BR "IF NOT EXISTS" ,
+ignores
+.BR PRAGMA " / " INSERT " / " BEGIN " / " COMMIT " / " DELETE
+runs, handles inline
+.B PRIMARY KEY AUTOINCREMENT
+clauses.
+.TP
+.B MSSQL
+SSMS / pg_dump-MSSQL compatible: strips
+.RB \(aq [bracket] \(aq
+identifier escapes, folds
+.RB \(aq (max) \(aq
+type qualifiers, drops
+.B IDENTITY(n,n)
+and
+.BR CLUSTERED " / " NONCLUSTERED " / " ASC " / " DESC
+keywords.
+.SH TYPE MAPPING
+The generator maps DDL types to JVM/Java/Kotlin types:
+.RS 4
+.IP \(bu 2
+\fBvarchar\fR / \fBtext\fR / \fBnvarchar\fR / \fBuniqueidentifier\fR \(-> \fBString\fR
+.IP \(bu 2
+\fBint\fR / \fBtinyint\fR \(-> \fBInteger\fR (Java) | \fBInt\fR (Kotlin)
+.IP \(bu 2
+\fBbigint\fR / \fBserial bigserial\fR \(-> \fBLong\fR
+.IP \(bu 2
+\fBfloat\fR / \fBreal\fR \(-> \fBFloat\fR
+.IP \(bu 2
+\fBdouble\fR / \fBnumeric\fR / \fBdecimal\fR / \fBmoney\fR \(-> \fBDouble\fR
+.IP \(bu 2
+\fBdatetime\fR / \fBdate\fR \(-> \fBLocalDate\fR
+.IP \(bu 2
+\fBtimestamp\fR / \fBdatetime2\fR / \fBdatetimeoffset\fR \(-> \fBLocalDateTime\fR
+.IP \(bu 2
+\fBtime\fR \(-> \fBLocalTime\fR
+.IP \(bu 2
+\fBbit\fR / \fBboolean\fR \(-> \fBString\fR (Java) | \fBBoolean\fR (Kotlin)
+.RE
+.PP
+Primary keys are emitted with
+.BR @Id ;
+foreign keys (FOREIGN KEY ... REFERENCES) are rewritten to
+.B @ManyToOne
++ @JoinColumn referencing the target entity.
+.SH OUTPUT LAYOUT
+Per
+.BR target.package " (e.g. " com/example/generated "):"
+.RS 4
+.nf
+<target.folder>/<target.package>/
+    entity/<Name>.{java,kt,groovy}
+    rest/<Name>Resource.{java,kt,groovy}
+    dao/<Name>Dao.{java,kt,groovy}
+    repository/<Name>Repository.{java,kt,groovy}
+    utils/GlobalConstants.{java,kt,groovy}
+    dao/GenericDao.{java,kt,groovy}
+.fi
+.RE
+.SH EXAMPLES
+Generate Java entities from a MySQL dump:
+.PP
+.RS 4
+.nf
+$ cat > src/main/resources/config.properties <<EOF
+target.folder=build/generated/
+target.package=com/example/generated
+file.name=mysql_dump.sql
+target.language=java
+database.type=mysql
+EOF
+$ spring-boot-rest-generator
+Generated 18 entities under build/generated//com/example/generated
+.fi
+.RE
+.PP
+Switch to PostgreSQL + Kotlin:
+.PP
+.RS 4
+.nf
+$ sed -i 's/mysql/postgresql/; s/mysql_dump.sql/pg_dump.sql/; s/java/kotlin/' \\
+    src/main/resources/config.properties
+$ spring-boot-rest-generator
+.fi
+.RE
+.SH FILES
+.TP
+.B src/main/resources/config.properties
+Configuration (required).
+.TP
+.B src/main/resources/{mysql,pg,sqlite,mssql}_dump.sql
+Bundled sample dumps for smoke-testing.
+.TP
+.B src/main/resources/templates/
+Mustache-style templates (\fIentity.tmpl\fR, \fIrest.resource.tmpl\fR,
+\fIdao.tmpl\fR, \fIrepository.tmpl\fR, \fIconstants.tmpl\fR,
+\fIgenericdao.tmpl\fR) plus per-language subdirs
+.RB ( templates/kotlin/ ", " templates/groovy/ ).
+.SH EXIT STATUS
+.TP
+.B 0
+Generation succeeded.
+.TP
+.B non-zero
+Config file missing, DDL file missing, template missing, or I/O failure
+writing output.
+.SH SEE ALSO
+.BR spring-boot-rest-generatorall (1)
+
+.SH AUTHOR
+MenkeTechnologies <https://github.com/MenkeTechnologies>
+
+.SH BUGS
+Report at
+.RB \(aq https://github.com/MenkeTechnologies/spring-boot-rest-generator/issues \(aq.
