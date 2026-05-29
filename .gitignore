@@ -1,0 +1,12 @@
+# Gradle / Java
+.gradle/
+build/
+out/
+*.iml
+.idea/
+
+# Rust
+target/
+
+# Generator output (regenerated from DDL on every run)
+src/main/java/com/example/generated/

@@ -1,0 +1,25 @@
+[package]
+name = "spring-boot-rest-generator"
+version = "0.2.0"
+edition = "2021"
+authors = ["MenkeTechnologies"]
+license = "MIT"
+description = "Generate a Spring Boot REST API (entities, controllers, DAOs, repositories, in Java / Kotlin / Groovy) from raw MySQL / PostgreSQL / SQLite / MSSQL DDL dumps. Rust port of the original Kotlin generator."
+repository = "https://github.com/MenkeTechnologies/spring-boot-rest-generator"
+default-run = "spring-boot-rest-generator"
+
+[[bin]]
+name = "spring-boot-rest-generator"
+path = "src/bin/main.rs"
+
+[lib]
+name = "spring_boot_rest_generator"
+path = "src/lib.rs"
+
+[dependencies]
+regex = "1"
+once_cell = "1"
+java-properties = "2"
+
+[dev-dependencies]
+tempfile = "3"
