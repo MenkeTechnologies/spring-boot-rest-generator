@@ -299,7 +299,7 @@ src/main/resources/templates/
 
 ### Test Suite Overview
 
-**500+ tests** across **28 test classes** covering unit, template, and integration layers.
+**800+ tests** across **28 test classes** covering unit, template, and integration layers.
 
 | Category | Test Class | Tests | What It Covers |
 |----------|-----------|-------|----------------|
