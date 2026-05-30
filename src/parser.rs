@@ -365,3 +365,215 @@ pub fn parse_words(words: &[String]) -> Vec<Entity> {
 
     entities
 }
+
+#[cfg(test)]
+mod tests {
+    //! Private-helper pins. These functions are not part of the public API
+    //! but they shape every rendered entity field name and PascalCase class
+    //! name, so a regression here would corrupt generated source silently.
+    //! All five are pure (no `Globals` dependency) so they can be exercised
+    //! without the `GLOBALS_LOCK` synchronisation used in `parity_smoke.rs`.
+
+    use super::*;
+
+    // ------------------------------------------------------------ trim_punct
+
+    #[test]
+    fn trim_punct_strips_trailing_semicolon() {
+        assert_eq!(trim_punct("foo;"), "foo");
+    }
+
+    #[test]
+    fn trim_punct_strips_trailing_comma() {
+        assert_eq!(trim_punct("foo,"), "foo");
+    }
+
+    #[test]
+    fn trim_punct_strips_trailing_open_paren() {
+        assert_eq!(trim_punct("foo("), "foo");
+    }
+
+    #[test]
+    fn trim_punct_strips_trailing_close_paren() {
+        assert_eq!(trim_punct("foo)"), "foo");
+    }
+
+    #[test]
+    fn trim_punct_strips_compound_trailing_punctuation() {
+        // `trim_end_matches` consumes EVERY trailing char from the set,
+        // so `foo;)` strips both — pin that behaviour explicitly so a
+        // future refactor doesn't accidentally switch to single-char
+        // trim and silently leak punctuation into entity names.
+        assert_eq!(trim_punct("foo;)"), "foo");
+    }
+
+    #[test]
+    fn trim_punct_leaves_internal_punctuation_alone() {
+        assert_eq!(trim_punct("foo(bar)"), "foo(bar");
+    }
+
+    #[test]
+    fn trim_punct_returns_empty_for_all_punct_input() {
+        assert_eq!(trim_punct(";;,,()"), "");
+    }
+
+    // -------------------------------------------------- first_letter_to_caps
+
+    #[test]
+    fn first_letter_to_caps_basic_uppercase() {
+        assert_eq!(first_letter_to_caps("hello"), "Hello");
+    }
+
+    #[test]
+    fn first_letter_to_caps_already_uppercase_is_idempotent() {
+        assert_eq!(first_letter_to_caps("Hello"), "Hello");
+    }
+
+    #[test]
+    fn first_letter_to_caps_empty_string_returns_empty() {
+        assert_eq!(first_letter_to_caps(""), "");
+    }
+
+    #[test]
+    fn first_letter_to_caps_preserves_rest_unchanged() {
+        // Rest of the string is NOT touched — only the first char is folded.
+        assert_eq!(first_letter_to_caps("hELLO"), "HELLO");
+    }
+
+    #[test]
+    fn first_letter_to_caps_single_character_input() {
+        assert_eq!(first_letter_to_caps("h"), "H");
+    }
+
+    #[test]
+    fn first_letter_to_caps_leading_digit_is_passed_through() {
+        // Digits have no uppercase form; the function must not panic.
+        assert_eq!(first_letter_to_caps("1abc"), "1abc");
+    }
+
+    // --------------------------------------------------------- camel_name
+
+    #[test]
+    fn camel_name_snake_to_camel_basic() {
+        assert_eq!(camel_name("foo_bar"), "fooBar");
+    }
+
+    #[test]
+    fn camel_name_single_word_lowercased() {
+        assert_eq!(camel_name("Foo"), "foo");
+    }
+
+    #[test]
+    fn camel_name_multi_underscore_segments() {
+        assert_eq!(camel_name("user_account_id"), "userAccountId");
+    }
+
+    #[test]
+    fn camel_name_handles_leading_underscore() {
+        // A leading underscore promotes the FIRST character to upper.
+        assert_eq!(camel_name("_foo"), "Foo");
+    }
+
+    #[test]
+    fn camel_name_trailing_underscore_is_noop() {
+        assert_eq!(camel_name("foo_"), "foo");
+    }
+
+    #[test]
+    fn camel_name_double_underscore_treated_as_two_separators() {
+        // Two adjacent underscores produce an upper-cased empty segment
+        // followed by an upper-cased next char — same as Kotlin's pattern.
+        assert_eq!(camel_name("foo__bar"), "fooBar");
+    }
+
+    #[test]
+    fn camel_name_empty_string_returns_empty() {
+        assert_eq!(camel_name(""), "");
+    }
+
+    #[test]
+    fn camel_name_already_lowercase_no_underscores_unchanged() {
+        assert_eq!(camel_name("foo"), "foo");
+    }
+
+    // ---------------------------------------------- entity_name_from_table
+
+    #[test]
+    fn entity_name_from_table_snake_to_pascal() {
+        assert_eq!(entity_name_from_table("user_account"), "UserAccount");
+    }
+
+    #[test]
+    fn entity_name_from_table_single_word_capitalised() {
+        assert_eq!(entity_name_from_table("user"), "User");
+    }
+
+    #[test]
+    fn entity_name_from_table_three_segments() {
+        assert_eq!(
+            entity_name_from_table("foo_bar_baz"),
+            "FooBarBaz"
+        );
+    }
+
+    #[test]
+    fn entity_name_from_table_uppercase_in_source_is_lowered_on_rest() {
+        // First letter of each segment upper-cased; rest lower-cased.
+        assert_eq!(entity_name_from_table("USER_ACCOUNT"), "UserAccount");
+    }
+
+    #[test]
+    fn entity_name_from_table_empty_returns_empty() {
+        assert_eq!(entity_name_from_table(""), "");
+    }
+
+    #[test]
+    fn entity_name_from_table_mixed_case_segments() {
+        assert_eq!(entity_name_from_table("fOo_BaR"), "FooBar");
+    }
+
+    // ------------------------------------------------------ camelize_column
+
+    #[test]
+    fn camelize_column_basic_snake_to_camel() {
+        assert_eq!(camelize_column("foo_bar", "`"), "fooBar");
+    }
+
+    #[test]
+    fn camelize_column_strips_escape_chars() {
+        assert_eq!(camelize_column("`foo_bar`", "`"), "fooBar");
+    }
+
+    #[test]
+    fn camelize_column_uses_provided_escape_string() {
+        // MSSQL-style escape is `[` — pass it explicitly.
+        assert_eq!(camelize_column("[foo_bar", "["), "fooBar");
+    }
+
+    #[test]
+    fn camelize_column_single_word_lowercased() {
+        assert_eq!(camelize_column("name", "`"), "name");
+    }
+
+    #[test]
+    fn camelize_column_uppercase_input_lowered_correctly() {
+        assert_eq!(camelize_column("USER_ID", "`"), "userId");
+    }
+
+    #[test]
+    fn camelize_column_empty_input_returns_empty() {
+        assert_eq!(camelize_column("", "`"), "");
+    }
+
+    #[test]
+    fn camelize_column_only_escape_chars_returns_empty() {
+        assert_eq!(camelize_column("```", "`"), "");
+    }
+
+    #[test]
+    fn camelize_column_multi_segment_pascal_then_lowered_first() {
+        // Internal pipeline produces PascalCase then lowers the first
+        // char — pin that the LAST segment retains its capital.
+        assert_eq!(camelize_column("foo_bar_baz", "`"), "fooBarBaz");
+    }
+}
