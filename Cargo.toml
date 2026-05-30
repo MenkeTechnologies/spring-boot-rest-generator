@@ -6,6 +6,7 @@ authors = ["MenkeTechnologies"]
 license = "MIT"
 description = "Generate a Spring Boot REST API (entities, controllers, DAOs, repositories, in Java / Kotlin / Groovy) from raw MySQL / PostgreSQL / SQLite / MSSQL DDL dumps. Rust port of the original Kotlin generator."
 repository = "https://github.com/MenkeTechnologies/spring-boot-rest-generator"
+homepage = "https://github.com/MenkeTechnologies/spring-boot-rest-generator"
 default-run = "spring-boot-rest-generator"
 
 [[bin]]
