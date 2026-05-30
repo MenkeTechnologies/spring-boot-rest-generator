@@ -246,3 +246,283 @@ fn build_kotlin_entity_fields(sb: &mut String, entity: &Entity) {
         sb.push_str("\n\n");
     }
 }
+
+#[cfg(test)]
+mod tests {
+    //! Unit pins for the private per-language entity-field renderers.
+    //! These functions emit the heart of every generated POJO / data class
+    //! / Groovy class, so a wrong annotation or missing default-value path
+    //! produces compile errors in user-facing output. parity_smoke covers
+    //! end-to-end shape on real DDL fixtures but doesn't catch single-cell
+    //! template drift (`var` vs `val`, `@Column` vs `@JoinColumn`, missing
+    //! Kotlin defaults). These pins fill that gap.
+
+    use super::*;
+    use crate::entity::{ColumnToField, Entity};
+
+    fn col(name: &str, jt: &str, id: Option<&str>, camel: &str) -> ColumnToField {
+        ColumnToField {
+            database_id_type: id.map(String::from),
+            database_column_name: Some(name.into()),
+            camel_case_field_name: Some(camel.into()),
+            database_type: None,
+            java_type: Some(jt.into()),
+        }
+    }
+
+    fn entity_with(cols: Vec<ColumnToField>) -> Entity {
+        Entity {
+            table_name: "users".into(),
+            entity_name: "Users".into(),
+            columns: cols,
+        }
+    }
+
+    // ---------------------------------------------------- Java renderer
+
+    #[test]
+    fn java_plain_column_renders_column_annotation_and_private_decl() {
+        let e = entity_with(vec![col("name", "String", None, "name")]);
+        let mut sb = String::new();
+        build_java_entity_fields(&mut sb, &e);
+        assert!(sb.contains("@Column(name = \"name\")"));
+        assert!(sb.contains("private String name;"));
+        // No @Id, no @JoinColumn for a plain column.
+        assert!(!sb.contains("@Id"));
+        assert!(!sb.contains("@JoinColumn"));
+    }
+
+    #[test]
+    fn java_primary_key_renders_id_annotation_then_column() {
+        let e = entity_with(vec![col("id", "Long", Some("@Id"), "id")]);
+        let mut sb = String::new();
+        build_java_entity_fields(&mut sb, &e);
+        // @Id appears BEFORE @Column on the same field.
+        let id_pos = sb.find("@Id").expect("@Id present");
+        let col_pos = sb.find("@Column").expect("@Column present");
+        assert!(id_pos < col_pos, "@Id must precede @Column");
+        assert!(sb.contains("private Long id;"));
+    }
+
+    #[test]
+    fn java_foreign_key_renders_many_to_one_and_join_column_not_column() {
+        let e = entity_with(vec![col("user_id", "User", Some("@ManyToOne"), "user")]);
+        let mut sb = String::new();
+        build_java_entity_fields(&mut sb, &e);
+        assert!(sb.contains("@ManyToOne"));
+        assert!(sb.contains("@JoinColumn(name = \"user_id\")"));
+        // FK path uses @JoinColumn, NOT @Column.
+        assert!(!sb.contains("@Column(name = \"user_id\")"));
+        assert!(sb.contains("private User user;"));
+    }
+
+    #[test]
+    fn java_many_to_one_match_is_case_insensitive() {
+        let e = entity_with(vec![col("user_id", "User", Some("@manytoone"), "user")]);
+        let mut sb = String::new();
+        build_java_entity_fields(&mut sb, &e);
+        // Mixed-case `@manytoone` must still route to the JoinColumn branch.
+        assert!(sb.contains("@JoinColumn(name = \"user_id\")"));
+        assert!(!sb.contains("@Column(name = \"user_id\")"));
+    }
+
+    #[test]
+    fn java_renders_columns_in_declaration_order() {
+        let e = entity_with(vec![
+            col("a", "String", None, "a"),
+            col("b", "Long", None, "b"),
+        ]);
+        let mut sb = String::new();
+        build_java_entity_fields(&mut sb, &e);
+        let a_pos = sb.find("private String a").expect("a present");
+        let b_pos = sb.find("private Long b").expect("b present");
+        assert!(a_pos < b_pos, "columns must render in declaration order");
+    }
+
+    #[test]
+    fn java_empty_entity_emits_nothing() {
+        let e = entity_with(vec![]);
+        let mut sb = String::new();
+        build_java_entity_fields(&mut sb, &e);
+        assert!(sb.is_empty(), "empty entity must emit no field text");
+    }
+
+    #[test]
+    fn java_decl_ends_with_semicolon() {
+        let e = entity_with(vec![col("x", "Integer", None, "x")]);
+        let mut sb = String::new();
+        build_java_entity_fields(&mut sb, &e);
+        assert!(
+            sb.contains("private Integer x;"),
+            "Java field decl must end with `;`"
+        );
+    }
+
+    // ---------------------------------------------------- Groovy renderer
+
+    #[test]
+    fn groovy_plain_column_omits_private_keyword_and_semicolon() {
+        let e = entity_with(vec![col("name", "String", None, "name")]);
+        let mut sb = String::new();
+        build_groovy_entity_fields(&mut sb, &e);
+        assert!(sb.contains("@Column(name = \"name\")"));
+        assert!(sb.contains("String name\n"));
+        // Groovy: no `private`, no trailing `;`.
+        assert!(!sb.contains("private "));
+        assert!(!sb.contains("name;"));
+    }
+
+    #[test]
+    fn groovy_foreign_key_routes_to_join_column() {
+        let e = entity_with(vec![col("user_id", "User", Some("@ManyToOne"), "user")]);
+        let mut sb = String::new();
+        build_groovy_entity_fields(&mut sb, &e);
+        assert!(sb.contains("@ManyToOne"));
+        assert!(sb.contains("@JoinColumn(name = \"user_id\")"));
+    }
+
+    // ---------------------------------------------------- Kotlin renderer
+
+    #[test]
+    fn kotlin_plain_column_uses_var_and_string_default() {
+        let e = entity_with(vec![col("name", "String", None, "name")]);
+        let mut sb = String::new();
+        build_kotlin_entity_fields(&mut sb, &e);
+        assert!(sb.contains("@Column(name = \"name\")"));
+        assert!(sb.contains("var name: String = \"\""));
+    }
+
+    #[test]
+    fn kotlin_int_column_has_zero_default() {
+        let e = entity_with(vec![col("count", "Int", None, "count")]);
+        let mut sb = String::new();
+        build_kotlin_entity_fields(&mut sb, &e);
+        assert!(sb.contains("var count: Int = 0"));
+    }
+
+    #[test]
+    fn kotlin_long_column_has_zero_l_default() {
+        let e = entity_with(vec![col("id", "Long", Some("@Id"), "id")]);
+        let mut sb = String::new();
+        build_kotlin_entity_fields(&mut sb, &e);
+        assert!(sb.contains("var id: Long = 0L"));
+    }
+
+    #[test]
+    fn kotlin_float_column_has_zero_f_default() {
+        let e = entity_with(vec![col("ratio", "Float", None, "ratio")]);
+        let mut sb = String::new();
+        build_kotlin_entity_fields(&mut sb, &e);
+        assert!(sb.contains("var ratio: Float = 0f"));
+    }
+
+    #[test]
+    fn kotlin_double_column_has_zero_point_zero_default() {
+        let e = entity_with(vec![col("rate", "Double", None, "rate")]);
+        let mut sb = String::new();
+        build_kotlin_entity_fields(&mut sb, &e);
+        assert!(sb.contains("var rate: Double = 0.0"));
+    }
+
+    #[test]
+    fn kotlin_boolean_column_has_false_default() {
+        let e = entity_with(vec![col("active", "Boolean", None, "active")]);
+        let mut sb = String::new();
+        build_kotlin_entity_fields(&mut sb, &e);
+        assert!(sb.contains("var active: Boolean = false"));
+    }
+
+    #[test]
+    fn kotlin_local_date_column_is_nullable_with_null_default() {
+        let e = entity_with(vec![col("dob", "LocalDate", None, "dob")]);
+        let mut sb = String::new();
+        build_kotlin_entity_fields(&mut sb, &e);
+        // The `?` makes the type nullable + `= null` is the literal default.
+        assert!(sb.contains("var dob: LocalDate? = null"));
+    }
+
+    #[test]
+    fn kotlin_local_time_column_is_nullable() {
+        let e = entity_with(vec![col("at", "LocalTime", None, "at")]);
+        let mut sb = String::new();
+        build_kotlin_entity_fields(&mut sb, &e);
+        assert!(sb.contains("var at: LocalTime? = null"));
+    }
+
+    #[test]
+    fn kotlin_local_date_time_column_is_nullable() {
+        let e = entity_with(vec![col("ts", "LocalDateTime", None, "ts")]);
+        let mut sb = String::new();
+        build_kotlin_entity_fields(&mut sb, &e);
+        assert!(sb.contains("var ts: LocalDateTime? = null"));
+    }
+
+    #[test]
+    fn kotlin_unknown_type_falls_through_to_nullable_null_default() {
+        // `User` is a custom entity type — must default to `? = null`.
+        let e = entity_with(vec![col("user_id", "User", Some("@ManyToOne"), "user")]);
+        let mut sb = String::new();
+        build_kotlin_entity_fields(&mut sb, &e);
+        assert!(sb.contains("var user: User? = null"));
+    }
+
+    #[test]
+    fn kotlin_foreign_key_routes_to_join_column() {
+        let e = entity_with(vec![col("user_id", "User", Some("@ManyToOne"), "user")]);
+        let mut sb = String::new();
+        build_kotlin_entity_fields(&mut sb, &e);
+        assert!(sb.contains("@JoinColumn(name = \"user_id\")"));
+        assert!(!sb.contains("@Column(name = \"user_id\")"));
+    }
+
+    #[test]
+    fn kotlin_primary_key_emits_id_annotation_before_column() {
+        let e = entity_with(vec![col("id", "Long", Some("@Id"), "id")]);
+        let mut sb = String::new();
+        build_kotlin_entity_fields(&mut sb, &e);
+        let id_pos = sb.find("@Id").expect("@Id present");
+        let col_pos = sb.find("@Column").expect("@Column present");
+        assert!(id_pos < col_pos, "@Id must precede @Column in Kotlin output");
+    }
+
+    // ---------------------------------------- cross-language shape pins
+
+    #[test]
+    fn all_three_renderers_indent_with_four_spaces() {
+        let e = entity_with(vec![col("name", "String", None, "name")]);
+        let renderers: [(&str, fn(&mut String, &Entity)); 3] = [
+            ("java", build_java_entity_fields),
+            ("groovy", build_groovy_entity_fields),
+            ("kotlin", build_kotlin_entity_fields),
+        ];
+        for (label, render) in renderers {
+            let mut sb = String::new();
+            render(&mut sb, &e);
+            assert!(
+                sb.contains("    @Column"),
+                "{label} renderer must indent annotations with 4 spaces"
+            );
+        }
+    }
+
+    #[test]
+    fn all_three_renderers_emit_blank_line_between_columns() {
+        let e = entity_with(vec![
+            col("a", "String", None, "a"),
+            col("b", "String", None, "b"),
+        ]);
+        let renderers: [(&str, fn(&mut String, &Entity)); 3] = [
+            ("java", build_java_entity_fields),
+            ("groovy", build_groovy_entity_fields),
+            ("kotlin", build_kotlin_entity_fields),
+        ];
+        for (label, render) in renderers {
+            let mut sb = String::new();
+            render(&mut sb, &e);
+            assert!(
+                sb.contains("\n\n"),
+                "{label} renderer must separate columns with a blank line"
+            );
+        }
+    }
+}
