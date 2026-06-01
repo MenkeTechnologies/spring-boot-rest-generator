@@ -27,6 +27,7 @@ impl Configuration {
         match language {
             "kotlin" => "build/generated/src/main/kotlin/",
             "groovy" => "build/generated/src/main/groovy/",
+            "rust-loco" | "loco" => "build/generated/loco/",
             _ => "build/generated/src/main/java/",
         }
     }

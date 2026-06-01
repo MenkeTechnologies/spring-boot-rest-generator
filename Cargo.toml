@@ -1,29 +1,34 @@
 [package]
-name = "spring-boot-rest-generator"
+name = "api-rest-generator"
 version = "0.2.0"
 edition = "2021"
 authors = ["MenkeTechnologies"]
 license = "MIT"
-description = "Spring Boot REST API generator from raw SQL DDL dumps (Java/Kotlin/Groovy). Rust port of the original Kotlin generator"
-repository = "https://github.com/MenkeTechnologies/spring-boot-rest-generator"
-homepage = "https://github.com/MenkeTechnologies/spring-boot-rest-generator"
-documentation = "https://docs.rs/spring-boot-rest-generator"
-keywords = ["spring-boot", "codegen", "rest-api", "java", "kotlin"]
+description = "REST API generator from raw SQL DDL dumps. Targets Spring Boot (Java/Kotlin/Groovy) and Loco (Rust/Axum/SeaORM)."
+repository = "https://github.com/MenkeTechnologies/api-rest-generator"
+homepage = "https://github.com/MenkeTechnologies/api-rest-generator"
+documentation = "https://docs.rs/api-rest-generator"
+keywords = ["codegen", "rest-api", "loco", "spring-boot", "ddl"]
 categories = ["development-tools::build-utils", "command-line-utilities"]
-default-run = "spring-boot-rest-generator"
+default-run = "api-rest-generator"
 
 [[bin]]
-name = "spring-boot-rest-generator"
+name = "api-rest-generator"
 path = "src/bin/main.rs"
 
+[[bin]]
+name = "loco-gen"
+path = "src/bin/loco_gen.rs"
+
 [lib]
-name = "spring_boot_rest_generator"
+name = "api_rest_generator"
 path = "src/lib.rs"
 
 [dependencies]
 regex = "1"
 once_cell = "1"
 java-properties = "2"
+clap = { version = "4", features = ["derive"] }
 
 [dev-dependencies]
 tempfile = "3"

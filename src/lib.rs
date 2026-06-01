@@ -14,6 +14,7 @@ pub mod config;
 pub mod constants;
 pub mod entity;
 pub mod globals;
+pub mod loco;
 pub mod normalize;
 pub mod parser;
 pub mod templates;

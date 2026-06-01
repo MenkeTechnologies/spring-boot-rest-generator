@@ -9,11 +9,11 @@ use std::fs::File;
 use std::sync::Mutex;
 
 use once_cell::sync::Lazy;
-use spring_boot_rest_generator::globals::{Globals, GlobalsInner};
-use spring_boot_rest_generator::normalize::{
+use api_rest_generator::globals::{Globals, GlobalsInner};
+use api_rest_generator::normalize::{
     normalize_mssql_words, normalize_postgresql_words, normalize_sqlite_words,
 };
-use spring_boot_rest_generator::parser::{get_words, parse_words};
+use api_rest_generator::parser::{get_words, parse_words};
 
 // Globals is process-wide; serialize tests so concurrent runs don't
 // step on each other's language / db_type configuration.
@@ -23,7 +23,7 @@ fn run(
     dialect: &str,
     language: &str,
     dump: &str,
-) -> Vec<spring_boot_rest_generator::entity::Entity> {
+) -> Vec<api_rest_generator::entity::Entity> {
     let _guard = GLOBALS_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     Globals::set(GlobalsInner {
         package: "com/example/generated".into(),

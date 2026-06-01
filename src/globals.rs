@@ -58,6 +58,11 @@ impl Globals {
     pub fn is_groovy() -> bool {
         Self::get().language.eq_ignore_ascii_case("groovy")
     }
+    /// True if the current target language is Rust/Loco.
+    pub fn is_rust_loco() -> bool {
+        let lang = Self::get().language;
+        lang.eq_ignore_ascii_case("rust-loco") || lang.eq_ignore_ascii_case("loco")
+    }
     /// True if the source DDL is PostgreSQL.
     pub fn is_postgresql() -> bool {
         Self::get().db_type.eq_ignore_ascii_case("postgresql")
@@ -88,6 +93,8 @@ impl Globals {
             ".kt"
         } else if Self::is_groovy() {
             ".groovy"
+        } else if Self::is_rust_loco() {
+            ".rs"
         } else {
             ".java"
         }

@@ -1,12 +1,15 @@
 ```
- ___  ____  ____  ____  _  _  ___    ____  _____  _____  ____
-/ __)(  _ \(  _ \(_  _)( \( )/ __)  (  _ \(  _  )(  _  )(_  _)
-\__ \ )___/ )   / _)(_  )  (( (_-.   ) _ < )(_)(  )(_)(   )(
-(___/(__)  (_)\_)(____)(_)\_)\___/  (____/(_____)(_____)  (__)
- ____  ____  ___  ____     ___  ____  _  _  ____  ____    __   ____  _____  ____
-(  _ \( ___)/ __)(_  _)   / __)( ___)( \( )( ___)(  _ \  /__\ (_  _)(  _  )(  _ \
- )   / )__) \__ \  )(    ( (_-. )__)  )  (  )__)  )   / /(__)\  )(   )(_)(  )   /
-(_)\_)(____)(___/ (__)    \___/(____)(_(\_)(____)(_)\_)(__)(__)(__) (_____)(_)\_)
+    _    ____ ___   ____  _____ ____ _____
+   / \  |  _ \_ _| |  _ \| ____/ ___|_   _|
+  / _ \ | |_) | |  | |_) |  _| \___ \ | |
+ / ___ \|  __/| |  |  _ <| |___ ___) || |
+/_/   \_\_|  |___| |_| \_\_____|____/ |_|
+
+  ____ _____ _   _ _____ ____      _  _____ ___  ____
+ / ___| ____| \ | | ____|  _ \    / \|_   _/ _ \|  _ \
+| |  _|  _| |  \| |  _| | |_) |  / _ \ | || | | | |_) |
+| |_| | |___| |\  | |___|  _ <  / ___ \| || |_| |  _ <
+ \____|_____|_| \_|_____|_| \_\/_/   \_\_| \___/|_| \_\
 ```
 
 <p align="center">
@@ -15,12 +18,12 @@
 
 ---
 
-[![CI](https://github.com/MenkeTechnologies/spring-boot-rest-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/MenkeTechnologies/spring-boot-rest-generator/actions/workflows/ci.yml)
+[![CI](https://github.com/MenkeTechnologies/api-rest-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/MenkeTechnologies/api-rest-generator/actions/workflows/ci.yml)
 
 
 ## `> SYSTEM OVERVIEW`
 
-**Spring Boot REST Generator** is a zero-config code generation engine that parses raw MySQL, PostgreSQL, SQLite, or Microsoft SQL Server DDL dumps and outputs a fully wired Spring Boot REST API -- entities, controllers, DAOs, repositories -- all of it. You feed it SQL. It feeds you a backend.
+**API REST Generator** is a zero-config code generation engine that parses raw MySQL, PostgreSQL, SQLite, or Microsoft SQL Server DDL dumps and outputs a fully wired REST backend in your stack of choice — Spring Boot (Java/Kotlin/Groovy) or Loco (Rust/Axum/SeaORM) — entities, controllers, DAOs/repositories or migrations, all of it. You feed it SQL. It feeds you a backend.
 
 No boilerplate. No hand-wiring. Just schema in, API out.
 
@@ -35,19 +38,22 @@ No boilerplate. No hand-wiring. Just schema in, API out.
 [x] Parse MSSQL CREATE TABLE statements (SSMS Generate Scripts compatible)
 [x] Auto-detect primary keys, foreign keys, column types
 [x] Generate JPA entities with @Id, @ManyToOne, @JoinColumn
+[x] Generate SeaORM entities (`#[derive(DeriveEntityModel)]`, `#[sea_orm(primary_key)]`)
 [x] Generate REST controllers (GET / POST / PUT / DELETE)
-[x] Generate DAO service layer with GenericDao pattern
-[x] Generate Spring Data JPA repositories
-[x] Output in Java, Kotlin, or Groovy
-[x] Map MySQL types --> Java/Kotlin/Groovy/Groovy types (varchar->String, bigint->Long, datetime->LocalDateTime, ...)
-[x] Map PostgreSQL types --> Java/Kotlin/Groovy/Groovy types (integer, text, boolean, serial, numeric, real, ...)
-[x] Map SQLite types --> Java/Kotlin/Groovy/Groovy types (INTEGER, TEXT, REAL, NUMERIC, BLOB, ...)
-[x] Map MSSQL types --> Java/Kotlin/Groovy/Groovy types (nvarchar, uniqueidentifier, money, datetime2, ...)
+[x] Generate DAO service layer with GenericDao pattern (JVM targets)
+[x] Generate Spring Data JPA repositories (JVM targets)
+[x] Generate Loco controllers + migrations + module aggregators (Rust target)
+[x] Output in Java, Kotlin, Groovy, **or Rust/Loco**
+[x] Map MySQL types --> Java/Kotlin/Groovy/Rust types (varchar->String, bigint->Long/i64, datetime->LocalDateTime/DateTimeWithTimeZone, ...)
+[x] Map PostgreSQL types --> Java/Kotlin/Groovy/Rust types (integer, text, boolean, serial, numeric, real, ...)
+[x] Map SQLite types --> Java/Kotlin/Groovy/Rust types (INTEGER, TEXT, REAL, NUMERIC, BLOB, ...)
+[x] Map MSSQL types --> Java/Kotlin/Groovy/Rust types (nvarchar, uniqueidentifier, money, datetime2, ...)
 [x] Java: Lombok-powered (@Data, @AllArgsConstructor, @NoArgsConstructor)
 [x] Kotlin: Constructor injection, var properties with defaults, no Lombok
 [x] Groovy: @Canonical annotation, field injection, no Lombok
-[x] snake_case tables --> PascalCase entities, camelCase fields
-[x] Template-driven codegen with {{placeholder}} substitution
+[x] Rust/Loco: SeaORM entities, Axum-flavoured controllers, Loco `create_table` migrations, raw-identifier escaping for Rust keywords (`r#type`)
+[x] snake_case tables --> PascalCase entities, camelCase (JVM) / snake_case (Rust) fields
+[x] Template-driven codegen with {{placeholder}} substitution (JVM targets)
 ```
 
 ---
@@ -64,7 +70,7 @@ No boilerplate. No hand-wiring. Just schema in, API out.
 | Boilerplate    | Lombok (Java), @Canonical (Groovy) |
 | Tests          | JUnit 5                       |
 | DB Support     | MySQL, PostgreSQL, SQLite, MSSQL |
-| Output Languages | Java, Kotlin, Groovy          |
+| Output Languages | Java, Kotlin, Groovy, **Rust/Loco** |
 
 ---
 
@@ -82,7 +88,9 @@ target.language=kotlin
 database.type=mysql
 ```
 
-Set `target.language` to `java`, `kotlin`, or `groovy` to control the generated output language. Default is `java`.
+Set `target.language` to `java`, `kotlin`, `groovy`, or `rust-loco` to control the generated output language. Default is `java`.
+
+When `target.language=rust-loco`, the generator emits a [Loco](https://loco.rs) project tree (SeaORM entities, Axum-style controllers, `loco_rs::schema::create_table` migrations, module aggregators, and an `app_routes.rs` snippet) under `target.folder` — see the **RUST/LOCO TARGET** section below.
 
 Set `database.type` to `mysql`, `postgresql`, `sqlite`, or `mssql` to match your dump file format. Default is `mysql`.
 
@@ -107,7 +115,9 @@ Or run `Main.kt` from your IDE. Watch the grid light up.
 
 ## `> OUTPUT MATRIX`
 
-File extensions depend on `target.language`: `.java`, `.kt`, or `.groovy`.
+File extensions depend on `target.language`: `.java`, `.kt`, `.groovy`, or `.rs`.
+
+The directory tree below applies to the JVM targets (`java`/`kotlin`/`groovy`). For `rust-loco`, see the **RUST/LOCO TARGET** section below for the Loco-flavoured layout.
 
 ```
 {target.folder}/{target.package}/
@@ -132,16 +142,168 @@ File extensions depend on `target.language`: `.java`, `.kt`, or `.groovy`.
 
 ### Language Differences
 
-| Feature              | Java                          | Kotlin                         | Groovy                         |
-|----------------------|-------------------------------|--------------------------------|--------------------------------|
-| Entity boilerplate   | Lombok (@Data, @NoArgsConstructor) | var properties with defaults | @Canonical                     |
-| DI style             | @Autowired field injection    | Constructor injection          | @Autowired field injection     |
-| Inheritance syntax   | `extends` / `implements`      | `:` (colon)                    | `extends` / `implements`       |
-| File extension       | `.java`                       | `.kt`                          | `.groovy`                      |
-| Semicolons           | Yes                           | No                             | No                             |
-| int type             | Integer                       | Int                            | Integer                        |
-| bit/boolean type     | String                        | Boolean                        | String                         |
-| FK type              | Integer                       | Int                            | Integer                        |
+| Feature              | Java                          | Kotlin                         | Groovy                         | Rust/Loco                       |
+|----------------------|-------------------------------|--------------------------------|--------------------------------|---------------------------------|
+| Entity boilerplate   | Lombok (@Data, @NoArgsConstructor) | var properties with defaults | @Canonical                     | `#[derive(DeriveEntityModel)]` (SeaORM) |
+| DI style             | @Autowired field injection    | Constructor injection          | @Autowired field injection     | `State<AppContext>` extractor   |
+| Inheritance syntax   | `extends` / `implements`      | `:` (colon)                    | `extends` / `implements`       | trait `impl`                    |
+| File extension       | `.java`                       | `.kt`                          | `.groovy`                      | `.rs`                           |
+| Semicolons           | Yes                           | No                             | No                             | Yes                             |
+| int type             | Integer                       | Int                            | Integer                        | i32                             |
+| bigint type          | Long                          | Long                           | Long                           | i64                             |
+| bit/boolean type     | String                        | Boolean                        | String                         | bool                            |
+| FK type              | Integer                       | Int                            | Integer                        | i32                             |
+| datetime / timestamp | LocalDateTime                 | LocalDateTime                  | LocalDateTime                  | DateTimeWithTimeZone (SeaORM)   |
+
+---
+
+## `> RUST/LOCO TARGET`
+
+`target.language=rust-loco` (alias `loco`) skips the JVM template tree entirely and emits a Loco-flavoured Rust project tree under `target.folder` — drop it into a [`loco new`](https://loco.rs) skeleton and you have a working REST API in two steps.
+
+### Layout
+
+```
+{target.folder}/
+ |-- src/
+ |    |-- models/
+ |    |    |-- mod.rs                            # aggregator
+ |    |    |-- _entities/
+ |    |    |    |-- mod.rs
+ |    |    |    |-- prelude.rs
+ |    |    |    \-- {snake_table}.rs              # SeaORM Model + Relation
+ |    |    \-- {snake_table}.rs                   # ActiveModelBehavior + impls
+ |    |-- controllers/
+ |    |    |-- mod.rs
+ |    |    \-- {snake_table}.rs                   # full CRUD (list/get/add/update/remove)
+ |    \-- app_routes.rs                            # snippet for your Hooks::routes
+ \-- migration/
+      \-- src/
+           |-- lib.rs                              # Migrator with every migration
+           \-- m{datetime}_{snake_table}.rs        # loco_rs::schema::create_table
+```
+
+### Type mapping (Rust/Loco target)
+
+| SQL type                                   | Rust (SeaORM)            | Loco `ColType`           |
+|--------------------------------------------|--------------------------|--------------------------|
+| `bigint`, `int8`, `bigserial`              | `i64`                    | `BigInteger`             |
+| `int`, `integer`, `int4`, `serial`         | `i32`                    | `Integer`                |
+| `smallint`, `int2`                         | `i16`                    | `SmallInteger`           |
+| `tinyint`                                  | `i8`                     | `SmallInteger`           |
+| `varchar(n)`, `char`, `text`, `nvarchar`   | `String`                 | `String`                 |
+| `bool`, `boolean`, `bit`                   | `bool`                   | `Boolean`                |
+| `float`, `real`                            | `f32`                    | `Float`                  |
+| `double`, `double precision`               | `f64`                    | `Double`                 |
+| `decimal`, `numeric`, `money`              | `f64`                    | `Double`                 |
+| `date`                                     | `Date`                   | `Date`                   |
+| `time`                                     | `Time`                   | `Time`                   |
+| `datetime`, `datetime2`, `timestamp(tz)`   | `DateTimeWithTimeZone`   | `TimestampWithTimeZone`  |
+| `blob`, `bytea`, `binary`, `varbinary`     | `Vec<u8>`                | `Blob`                   |
+| primary key column (any)                   | `i32`                    | `PkAuto`                 |
+
+Reserved Rust keywords (e.g. column named `type`, `match`, `move`) are emitted as raw identifiers (`r#type`) so the generated structs compile without losing the original column name in JSON serialisation.
+
+### Using the `loco-gen` CLI (recommended)
+
+The repo ships a dedicated Rust CLI binary, `loco-gen`, that scaffolds a Loco project AND emits all entities, controllers, and migrations from a DDL dump in one shot — no config file editing required.
+
+```bash
+# build the CLI once
+cargo install --path . --bin loco-gen      # or: cargo build --release && cp target/release/loco-gen ~/bin/
+
+# prerequisite: the upstream Loco CLI
+cargo install loco
+
+# one-shot: scaffold + generate + wire routes + run migrations
+loco-gen new \
+  --ddl  ./mysql_dump.sql \
+  --name myapi \
+  --out  . \
+  --db   mysql \
+  --loco-db sqlite \
+  --wire \
+  --migrate
+
+cd myapi && cargo loco start    # CRUD endpoints live at /api/{table_plural}/{id}
+```
+
+Subcommands:
+
+| Subcommand | What it does |
+|------------|--------------|
+| `loco-gen new`      | Runs `loco new -n <name> --db <loco-db>`, parses the DDL, writes all generated files into the new project, and (with `--wire`) patches `src/app.rs` to register every controller's routes. Optional `--migrate` runs `cargo loco db migrate`. |
+| `loco-gen generate` | Emits the generated tree into an **existing** Loco project (no scaffold). `--wire` still patches `src/app.rs`. Useful for re-running after schema changes. |
+
+Flags:
+
+| Flag             | Default | Meaning |
+|------------------|---------|---------|
+| `--ddl FILE`     | _req'd_ | Path to your SQL dump. |
+| `--name NAME`    | _req'd (new)_ | Project / crate name. |
+| `--out DIR`      | `.`     | Where to create / find the project. |
+| `--db DIALECT`   | `mysql` | DDL dialect: `mysql`, `postgresql`, `sqlite`, `mssql`. |
+| `--loco-db DB`   | `sqlite`| Backing DB for the new Loco project: `sqlite`, `postgres`. |
+| `--wire`         | off     | Patch `src/app.rs` to register every generated controller's routes (idempotent — re-running replaces the same `// BEGIN loco-gen routes` block). |
+| `--migrate`      | off     | Run `cargo loco db migrate` after generation. |
+| `--loco-bin`     | `loco`  | Path to the upstream loco CLI binary. |
+
+The route-merge is **idempotent and surgical**: existing modules like `controllers::home` (shipped with the Loco scaffold) are preserved. Re-running `loco-gen generate --wire` after a schema change does not duplicate routes — the `// BEGIN loco-gen routes ... // END loco-gen routes` block is rewritten in place.
+
+### Wiring manually (advanced)
+
+If you prefer the original config-file workflow (run the JVM-style generator binary instead of the CLI):
+
+```bash
+loco new -n myapi --db sqlite --bg none --assets none
+cd myapi
+
+# point the generator at this project
+cat > /path/to/api-rest-generator/src/main/resources/config.properties <<EOF
+target.folder=$(pwd)
+target.package=
+file.name=mysql_dump.sql
+target.language=rust-loco
+database.type=mysql
+EOF
+
+# (back in the generator repo)
+cargo run --release --bin api-rest-generator
+
+# back in the loco project
+cargo loco db migrate
+cargo loco start
+```
+
+You'll then need to add the generated routes to your `Hooks::routes` impl in `src/app.rs` by hand:
+
+```rust
+fn routes(_ctx: &AppContext) -> AppRoutes {
+    AppRoutes::with_default_routes()
+        .add_route(controllers::home::routes())
+        .add_route(controllers::users::routes())
+        .add_route(controllers::orders::routes())
+        // ... one per generated entity
+}
+```
+
+(The generator drops a ready-made `register_generated_routes(routes)` helper in `src/app_routes.rs` you can call instead. The `loco-gen` CLI does this automatically when `--wire` is passed.)
+
+### Generated REST shape per table
+
+```
+GET     /api/{snake_table_plural}             # list all
+POST    /api/{snake_table_plural}             # create (JSON body, PK omitted)
+GET     /api/{snake_table_plural}/{id}        # fetch one
+PUT     /api/{snake_table_plural}/{id}        # update
+DELETE  /api/{snake_table_plural}/{id}        # remove
+```
+
+### Not yet implemented
+
+- FK relations are surfaced as plain `i32` columns; the SeaORM `Relation` enum is generated empty. Add `#[sea_orm(belongs_to = ...)]` arms by hand if you need eager-loading.
+- No unique / nullable / default-value detection — every column is non-null in the migration. Tweak the generated `ColType::X` → `XNull` / `XUniq` / `XWithDefault(...)` as needed.
+- No pagination, search, or filter endpoints — only the five basic CRUD verbs above.
 
 ---
 

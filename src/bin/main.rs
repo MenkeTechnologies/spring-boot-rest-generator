@@ -7,14 +7,15 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use spring_boot_rest_generator::config::Configuration;
-use spring_boot_rest_generator::entity::Entity;
-use spring_boot_rest_generator::globals::Globals;
-use spring_boot_rest_generator::normalize::{
+use api_rest_generator::config::Configuration;
+use api_rest_generator::entity::Entity;
+use api_rest_generator::globals::Globals;
+use api_rest_generator::loco;
+use api_rest_generator::normalize::{
     normalize_mssql_words, normalize_postgresql_words, normalize_sqlite_words,
 };
-use spring_boot_rest_generator::parser::{get_words, parse_words};
-use spring_boot_rest_generator::templates::Templates;
+use api_rest_generator::parser::{get_words, parse_words};
+use api_rest_generator::templates::Templates;
 
 const RESOURCES_DIR: &str = "src/main/resources";
 
@@ -39,6 +40,17 @@ fn main() -> std::io::Result<()> {
 
     let entities = parse_words(&words);
 
+    if Globals::is_rust_loco() {
+        write_loco(&entities, &cfg)?;
+        eprintln!(
+            "Generated {} Loco entit{} (models + controllers + migrations) under {}",
+            entities.len(),
+            if entities.len() == 1 { "y" } else { "ies" },
+            cfg.src_folder,
+        );
+        return Ok(());
+    }
+
     let templates = Templates::from_resources_dir(resources);
     write_templates(&templates, &entities, &cfg)?;
 
@@ -49,6 +61,12 @@ fn main() -> std::io::Result<()> {
         cfg.src_folder,
         cfg.target_package
     );
+    Ok(())
+}
+
+fn write_loco(entities: &[Entity], cfg: &Configuration) -> std::io::Result<()> {
+    let root = PathBuf::from(&cfg.src_folder);
+    loco::write_loco_project(entities, &root)?;
     Ok(())
 }
 

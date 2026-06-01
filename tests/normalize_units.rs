@@ -7,10 +7,10 @@
 //! lists so a regression in a single fold lands on a single failing test
 //! instead of a diffuse pipeline-level shape break.
 
-use spring_boot_rest_generator::normalize::{
+use api_rest_generator::normalize::{
     normalize_mssql_words, normalize_postgresql_words, normalize_sqlite_words,
 };
-use spring_boot_rest_generator::parser::get_words;
+use api_rest_generator::parser::get_words;
 
 fn words(s: &str) -> Vec<String> {
     s.split_whitespace().map(String::from).collect()
