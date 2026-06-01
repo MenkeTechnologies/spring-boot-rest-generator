@@ -304,6 +304,32 @@ DELETE  /api/{snake_table_plural}/{id}        # remove
 - FK relations are surfaced as plain `i32` columns; the SeaORM `Relation` enum is generated empty. Add `#[sea_orm(belongs_to = ...)]` arms by hand if you need eager-loading.
 - No unique / nullable / default-value detection — every column is non-null in the migration. Tweak the generated `ColType::X` → `XNull` / `XUniq` / `XWithDefault(...)` as needed.
 - No pagination, search, or filter endpoints — only the five basic CRUD verbs above.
+- Composite primary keys are collapsed to a synthetic `id` `PkAuto` column (Loco/SeaORM require a single PK). The original PK columns remain as regular fields — enforce uniqueness via a partial index in a follow-up migration if needed.
+
+### Verified sample DDLs
+
+`loco-gen` is exercised against four real-world open-source schemas living under [`samples/`](samples/). Each one round-trips through scaffold → generate → `cargo build` → `cargo loco db migrate` → live CRUD on `localhost:5150`.
+
+| Sample            | Source                                                                 | `--db`        | Tables | Notes                                                       |
+|-------------------|------------------------------------------------------------------------|---------------|--------|-------------------------------------------------------------|
+| Sakila            | [jOOQ/sakila](https://github.com/jOOQ/sakila)                          | `mysql`       | 16     | DVD rental store; exercises triggers/views/functions filtering. |
+| Chinook           | [lerocha/chinook-database](https://github.com/lerocha/chinook-database)| `sqlite`      | 11     | Digital media store; `[bracketed]` identifiers + composite PKs. |
+| Pagila            | [devrimgunduz/pagila](https://github.com/devrimgunduz/pagila)          | `postgresql`  | 22     | Postgres Sakila port; `ALTER TABLE ADD PRIMARY KEY` style.   |
+| Northwind         | [microsoft/sql-server-samples](https://github.com/microsoft/sql-server-samples) | `mssql`       | 13     | Classic MSSQL; double-quoted identifiers + `Order Details` space-in-name. |
+
+Reproduce locally:
+
+```bash
+cargo build --release
+for s in sakila:mysql chinook:sqlite pagila:postgresql northwind:mssql; do
+    name=${s%%:*}; db=${s##*:}
+    ./target/release/loco-gen new --ddl samples/${name}-*.sql \
+        --name ${name}_api --out /tmp/samples --db $db --loco-db sqlite --wire
+    ( cd /tmp/samples/${name}_api && cargo build && cargo loco db migrate )
+done
+```
+
+The integration test [`tests/sample_ddls.rs`](tests/sample_ddls.rs) pins the parse output (entity counts, PK presence, no leaked quotes/brackets/tabs) so regressions in the normalizer/parser are caught in CI without needing the Loco toolchain installed.
 
 ---
 

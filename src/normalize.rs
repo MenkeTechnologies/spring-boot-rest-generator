@@ -58,7 +58,10 @@ pub fn normalize_postgresql_words(words: &mut Vec<String>) {
 /// `BEGIN` / `COMMIT` / `DELETE` runs up to the next `CREATE` / `ALTER`.
 pub fn normalize_sqlite_words(words: &mut Vec<String>) {
     for w in words.iter_mut() {
-        *w = trim_punct(w).to_string();
+        // Strip MSSQL-style [Brackets] which Chinook and other SQLite
+        // dumps sometimes use as identifier escape (in addition to "").
+        let stripped = w.replace(['[', ']'], "");
+        *w = trim_punct(&stripped).to_string();
     }
     let mut i = 0;
     while i < words.len() {
@@ -98,11 +101,75 @@ static MSSQL_MAX_PAREN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\((?i:max)\)").e
 /// runs, and strip noise keywords (`CLUSTERED`, `NONCLUSTERED`, `ASC`,
 /// `DESC`, `IDENTITY(...)`).
 pub fn normalize_mssql_words(words: &mut Vec<String>) {
-    for w in words.iter_mut() {
-        let stripped = w.replace(['[', ']'], "");
-        let trimmed = trim_punct(&stripped).to_string();
-        *w = MSSQL_MAX_PAREN.replace_all(&trimmed, "").into_owned();
+    // Pass 0: collapse multi-word quoted identifiers like `"Order Details"`
+    // (Northwind has spaces inside quoted names) into a single token with
+    // spaces replaced by underscores: `"Order_Details"`. Without this, the
+    // parser sees `Order` as the table name and ignores `Details`, which
+    // can collide with another table called `Orders` after pluralisation.
+    let mut joined: Vec<String> = Vec::with_capacity(words.len());
+    let mut i = 0;
+    while i < words.len() {
+        let w = &words[i];
+        if w.starts_with('"') && !w[1..].contains('"') {
+            let mut combined = w.clone();
+            let mut j = i + 1;
+            while j < words.len() {
+                combined.push('_');
+                combined.push_str(&words[j]);
+                if words[j].contains('"') {
+                    j += 1;
+                    break;
+                }
+                j += 1;
+            }
+            joined.push(combined);
+            i = j;
+        } else {
+            joined.push(w.clone());
+            i += 1;
+        }
     }
+    *words = joined;
+
+    // Pass 1: strip `(max)` from `varchar(max)` / `nvarchar(max)` /
+    // `varbinary(max)` BEFORE splitting parens, otherwise the regex
+    // can't see the contiguous `(max)` group.
+    for w in words.iter_mut() {
+        *w = MSSQL_MAX_PAREN.replace_all(w, "").into_owned();
+    }
+
+    // Pass 2: split tokens that have `(` or `)` glued to identifiers
+    // (e.g. `([CustomerID]` from `([CustomerID] nchar...` in the
+    // un-formatted Northwind dump). Put each paren on its own token so
+    // the parser's paren-depth tracking sees it and so identifiers don't
+    // end up with stray parens after bracket-stripping.
+    let mut split: Vec<String> = Vec::with_capacity(words.len() * 2);
+    for w in words.iter() {
+        let mut buf = String::new();
+        for c in w.chars() {
+            if c == '(' || c == ')' {
+                if !buf.is_empty() {
+                    split.push(std::mem::take(&mut buf));
+                }
+                split.push(c.to_string());
+            } else {
+                buf.push(c);
+            }
+        }
+        if !buf.is_empty() {
+            split.push(buf);
+        }
+    }
+    *words = split;
+
+    // Pass 3: strip MSSQL identifier escapes — bracketed (`[Foo]`) and
+    // double-quoted (`"Foo"`) — and trim trailing punctuation.
+    for w in words.iter_mut() {
+        let stripped = w.replace(['[', ']', '"'], "");
+        *w = trim_punct(&stripped).to_string();
+    }
+    // Drop empties left by stripping.
+    words.retain(|w| !w.is_empty());
     let mut i = 0;
     while i < words.len() {
         let upper = words[i].to_uppercase();

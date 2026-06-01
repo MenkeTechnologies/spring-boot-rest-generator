@@ -20,7 +20,9 @@ pub fn get_words<R: Read>(reader: R) -> Vec<String> {
         if trimmed.starts_with('#') || trimmed.starts_with("--") {
             continue;
         }
-        out.extend(line.split(' ').filter(|t| !t.is_empty()).map(String::from));
+        // Split on any ASCII whitespace (space OR tab) so tabbed indents
+        // in dumps like Northwind don't leave `\t` glued to identifiers.
+        out.extend(line.split_ascii_whitespace().map(String::from));
     }
     out
 }
@@ -287,6 +289,8 @@ fn set_pk_or_fk_columns(entities: &mut [Entity], words: &[String], i: usize, esc
 pub fn parse_words(words: &[String]) -> Vec<Entity> {
     let escape = Globals::escape_character();
     let mut entities: Vec<Entity> = Vec::new();
+    let mut in_table = false;
+    let mut paren_depth: i32 = 0;
 
     let mut i = 0;
     while i < words.len() {
@@ -303,10 +307,39 @@ pub fn parse_words(words: &[String]) -> Vec<Entity> {
                     entity_name,
                     columns: Vec::new(),
                 });
+                in_table = true;
+                paren_depth = 0;
+            } else if matches!(
+                next_word.to_ascii_uppercase().as_str(),
+                "VIEW" | "FUNCTION" | "TRIGGER" | "PROCEDURE" | "INDEX" | "EVENT" | "SCHEMA" | "DATABASE"
+            ) {
+                in_table = false;
             }
         }
 
-        if !entities.is_empty() && constants::SUPPORTED_DATA_TYPES_PATTERN.is_match(word) {
+        // Track paren depth once we're past the `(` after the table name so
+        // we can detect the closing `)` that ends the CREATE TABLE body.
+        // This stops column-pattern matching from bleeding into subsequent
+        // CREATE VIEW / FUNCTION / TRIGGER definitions (e.g. Sakila has
+        // stored functions and triggers between table definitions).
+        if in_table {
+            for c in word.chars() {
+                if c == '(' {
+                    paren_depth += 1;
+                } else if c == ')' {
+                    paren_depth -= 1;
+                    if paren_depth <= 0 {
+                        in_table = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if in_table
+            && !entities.is_empty()
+            && constants::SUPPORTED_DATA_TYPES_PATTERN.is_match(word)
+        {
             if i == 0 {
                 i += 1;
                 continue;
@@ -356,7 +389,7 @@ pub fn parse_words(words: &[String]) -> Vec<Entity> {
             }
         }
 
-        if !entities.is_empty() {
+        if in_table && !entities.is_empty() {
             set_pk_or_fk_columns(&mut entities, words, i, escape);
         }
 
