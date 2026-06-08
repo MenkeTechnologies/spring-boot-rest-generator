@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="api-rest-generator — engineering report. Mid-transition Kotlin → Rust port: 4 SQL dialects × 4 output targets, dual implementations (Kotlin/Gradle original + Rust/Cargo port), parity-tested across a 27,738-line sample DDL corpus. 198 Rust #[test] + 806 Kotlin @Test enforce the matrix.">
+  <title>api-rest-generator — Engineering Report</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&amp;family=Share+Tech+Mono&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="hud-static.css">
+  <link rel="stylesheet" href="tutorial.css">
+  <style>
+    .tutorial-main { max-width: 68rem; }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+      gap: 0.5rem;
+      margin: 1rem 0;
+    }
+    .stat-card {
+      border: 1px solid var(--border);
+      border-left: 2px solid var(--cyan);
+      padding: 0.65rem 0.85rem;
+      background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+      border-radius: 2px;
+    }
+    .stat-val {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .stat-val.accent { color: var(--cyan); }
+    .stat-val.green  { color: var(--green); }
+    .stat-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--text-dim);
+      margin-top: 0.2rem;
+    }
+    .parity-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.6rem 0;
+      font-size: 12px;
+    }
+    .parity-table th {
+      background: var(--bg-secondary);
+      color: var(--cyan);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-align: left;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+    }
+    .parity-table td {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      vertical-align: top;
+    }
+    .parity-table td code { color: var(--accent-light); background: var(--bg); padding: 1px 4px; }
+    .parity-table td.ok    { color: var(--green); font-weight: 700; }
+    .parity-table td.part  { color: var(--yellow); font-weight: 700; }
+    .parity-table td.miss  { color: var(--text-muted); }
+    .parity-table td.num   { text-align: right; font-variant-numeric: tabular-nums; }
+    .section-rule { border: 0; border-top: 1px dashed var(--border); margin: 2rem 0 1.5rem; }
+  </style>
+</head>
+<body>
+  <div class="app tutorial-app" id="reportApp">
+    <div class="crt-scanline" id="crtH" aria-hidden="true"></div>
+    <div class="crt-scanline-v" id="crtV" aria-hidden="true"></div>
+
+    <header class="tutorial-header">
+      <div class="tutorial-header-inner">
+        <div>
+          <h1 class="tutorial-brand">// API-REST-GENERATOR &mdash; ENGINEERING REPORT</h1>
+          <nav class="tutorial-crumbs" aria-label="Breadcrumb">
+            <span class="current">Engineering Report</span>
+            <span class="sep">/</span>
+            <a href="index.html">Docs</a>
+            <span class="sep">/</span>
+            <a href="https://github.com/MenkeTechnologies/api-rest-generator" target="_blank" rel="noopener noreferrer">GitHub</a>
+          </nav>
+          <p style="margin:0.35rem 0 0;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-dim);letter-spacing:0.03em;opacity:0.75;">
+            api-rest-generator v0.2.0 &middot; mid-transition Kotlin/Gradle &rarr; Rust/Cargo port &middot; 4 SQL dialects &times; 4 output targets &middot; dual implementations cohabit &middot; parity-tested across a 27,738-line sample DDL corpus
+          </p>
+        </div>
+        <div class="tutorial-toolbar">
+          <button type="button" class="btn btn-secondary" id="btnTheme" title="Toggle light/dark">Theme</button>
+          <button type="button" class="btn btn-secondary active" id="btnCrt" title="CRT scanline overlay">CRT</button>
+          <button type="button" class="btn btn-secondary active" id="btnNeon" title="Neon border pulse">Neon</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="tutorial-main">
+
+      <h2 class="tutorial-title"><span class="step-hash">&gt;_</span>EXECUTIVE SUMMARY</h2>
+      <p class="tutorial-subtitle"><strong>api-rest-generator</strong> is a REST backend code generator. Input is a raw <code>CREATE TABLE</code> dump in any of four SQL dialects (MySQL, PostgreSQL, SQLite, MSSQL). Output is a complete REST surface &mdash; entities, controllers, DAOs / repositories, migrations, and module wiring &mdash; targeting one of four backends (Spring Boot in Java, Kotlin, or Groovy; or Loco in Rust with Axum + SeaORM). Two binaries ship from one crate: <code>api-rest-generator</code> (full multi-target dispatch) and <code>loco-gen</code> (focused Rust-only flag surface, same engine).</p>
+      <p class="tutorial-subtitle"><strong>Status: mid-transition.</strong> The repo currently carries <em>two</em> implementations of the same generator &mdash; the original Kotlin/Gradle pipeline (9,094 LOC) and the Rust/Cargo port (3,799 LOC). Both compile and produce output independently. The Rust port is being grown module-for-module against the Kotlin reference, with a parity test (<code>tests/parity_smoke.rs</code>) that runs both pipelines over shared sample DDLs and diffs the output. When parity holds across the full sample corpus + every dialect &times; target combination, the Kotlin path retires; until then both ship.</p>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-val">4</div><div class="stat-label">SQL dialects</div></div>
+        <div class="stat-card"><div class="stat-val accent">4</div><div class="stat-label">Output targets</div></div>
+        <div class="stat-card"><div class="stat-val">2</div><div class="stat-label">Binaries</div></div>
+        <div class="stat-card"><div class="stat-val">3,799</div><div class="stat-label">Rust LOC</div></div>
+        <div class="stat-card"><div class="stat-val">9,094</div><div class="stat-label">Kotlin LOC</div></div>
+        <div class="stat-card"><div class="stat-val green">198</div><div class="stat-label">Rust #[test]</div></div>
+        <div class="stat-card"><div class="stat-val green">806</div><div class="stat-label">Kotlin @Test</div></div>
+        <div class="stat-card"><div class="stat-val">4</div><div class="stat-label">Sample DDLs</div></div>
+        <div class="stat-card"><div class="stat-val accent">27,738</div><div class="stat-label">Sample DDL lines</div></div>
+      </div>
+
+      <hr class="section-rule">
+      <h2 class="tutorial-title"><span class="step-hash">~</span>DIALECT &times; TARGET MATRIX</h2>
+      <p class="tutorial-subtitle">Every input dialect feeds every output target. The crate ships sample DDLs covering all four dialect families; the test suite parameterises across (dialect &times; target) so a regression in any one cell fails CI for both pipelines.</p>
+
+      <table class="parity-table">
+        <thead>
+          <tr><th>Dialect &darr; / Target &rarr;</th><th>Java (Spring Boot)</th><th>Kotlin (Spring Boot)</th><th>Groovy (Spring Boot)</th><th>Rust/Loco (Axum + SeaORM)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>MySQL</td><td class="ok">OK</td><td class="ok">OK</td><td class="ok">OK</td><td class="ok">OK</td></tr>
+          <tr><td>PostgreSQL</td><td class="ok">OK</td><td class="ok">OK</td><td class="ok">OK</td><td class="ok">OK</td></tr>
+          <tr><td>SQLite</td><td class="ok">OK</td><td class="ok">OK</td><td class="ok">OK</td><td class="ok">OK</td></tr>
+          <tr><td>MSSQL</td><td class="ok">OK</td><td class="ok">OK</td><td class="ok">OK</td><td class="ok">OK</td></tr>
+        </tbody>
+      </table>
+
+      <hr class="section-rule">
+      <h2 class="tutorial-title"><span class="step-hash">$</span>SAMPLE DDL CORPUS</h2>
+      <p class="tutorial-subtitle">Real-world reference schemas covering every supported dialect, used as parity-test fixtures and as demo inputs. All four live in <code>samples/</code>.</p>
+
+      <table class="parity-table">
+        <thead><tr><th>Sample</th><th>Dialect</th><th>Source</th><th class="num">Lines</th></tr></thead>
+        <tbody>
+          <tr><td><code>chinook-sqlite.sql</code></td><td>SQLite</td><td>Chinook digital media store reference DB</td><td class="num">15,902</td></tr>
+          <tr><td><code>northwind-mssql.sql</code></td><td>MSSQL</td><td>Microsoft Northwind trading reference DB</td><td class="num">9,350</td></tr>
+          <tr><td><code>pagila-postgresql.sql</code></td><td>PostgreSQL</td><td>Pagila (PG port of Sakila) DVD rental DB</td><td class="num">1,842</td></tr>
+          <tr><td><code>sakila-mysql.sql</code></td><td>MySQL</td><td>Sakila DVD rental sample DB</td><td class="num">644</td></tr>
+          <tr><td colspan="3" style="text-align:right;"><strong>Aggregate corpus</strong></td><td class="num"><strong>27,738</strong></td></tr>
+        </tbody>
+      </table>
+
+      <hr class="section-rule">
+      <h2 class="tutorial-title"><span class="step-hash">&amp;</span>KOTLIN &rarr; RUST PORT STATUS</h2>
+      <p class="tutorial-subtitle">The Rust port mirrors the Kotlin layout module-for-module to keep the diff readable. Each Kotlin source file has (or will have) a matching <code>.rs</code> port; the table below pins which ones are live.</p>
+
+      <table class="parity-table">
+        <thead><tr><th>Kotlin source</th><th>Rust port</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><code>Main.kt</code></td><td><code>src/bin/main.rs</code> + <code>src/bin/loco_gen.rs</code></td><td class="ok">Ported &mdash; two binaries split out</td></tr>
+          <tr><td><code>utils/Util.kt</code></td><td><code>src/parser.rs</code></td><td class="ok">Ported &mdash; DDL &rarr; <code>Vec&lt;Entity&gt;</code></td></tr>
+          <tr><td><code>dto/Entity.kt</code> + <code>dto/ColumnToField.kt</code></td><td><code>src/entity.rs</code></td><td class="ok">Ported &mdash; data structs</td></tr>
+          <tr><td><code>utils/EntityToRESTConstants.kt</code></td><td><code>src/constants.rs</code></td><td class="ok">Ported &mdash; SQL-type &rarr; target-type maps for all 4 dialects</td></tr>
+          <tr><td><code>utils/Configuration.kt</code></td><td><code>src/config.rs</code></td><td class="ok">Ported &mdash; config-file loading + per-language defaults</td></tr>
+          <tr><td><code>utils/Globals.kt</code></td><td><code>src/globals.rs</code></td><td class="ok">Ported &mdash; mutable global state (shape preserved for transition)</td></tr>
+          <tr><td><code>utils/Util.kt</code> (name shaping)</td><td><code>src/normalize.rs</code></td><td class="ok">Ported &mdash; snake_case &harr; PascalCase / camelCase</td></tr>
+          <tr><td><code>templates/Templates.kt</code></td><td><code>src/templates.rs</code></td><td class="ok">Ported &mdash; <code>.tmpl</code> loader + <code>{{placeholder}}</code> renderer (JVM targets)</td></tr>
+          <tr><td>&mdash; (Rust-native, no Kotlin equivalent)</td><td><code>src/loco.rs</code></td><td class="ok">New &mdash; Loco/SeaORM codegen path; no JVM analogue</td></tr>
+          <tr><td>&mdash;</td><td><code>src/lib.rs</code></td><td class="ok">New &mdash; public API surface for programmatic use</td></tr>
+        </tbody>
+      </table>
+
+      <p style="margin-top:0.8rem;">Rust source totals <strong>3,799 LOC</strong> across 11 files; the Kotlin original totals <strong>9,094 LOC</strong> across 17 main files (and a larger test surface). The 2.4&times; line-count ratio reflects Kotlin's reliance on Spring / JPA / Lombok annotations (which expand into JVM bytecode the Rust port doesn't need an annotation framework to produce) and Java-style class boilerplate the Rust port collapses into structs + free functions.</p>
+
+      <hr class="section-rule">
+      <h2 class="tutorial-title"><span class="step-hash">!</span>TEST COVERAGE</h2>
+      <p class="tutorial-subtitle">Both pipelines carry their own test suite; the Rust suite is grown alongside the port to lock in parity as each module lands.</p>
+
+      <table class="parity-table">
+        <thead><tr><th>Suite</th><th>Lives in</th><th class="num">Count</th><th>Scope</th></tr></thead>
+        <tbody>
+          <tr><td>Rust unit (<code>#[test]</code> in src/)</td><td><code>src/*.rs</code></td><td class="num">152</td><td>Per-module: parser, normalize, constants, templates, loco, entity, config</td></tr>
+          <tr><td>Rust integration (<code>tests/</code>)</td><td><code>tests/*.rs</code></td><td class="num">46</td><td>End-to-end on sample DDLs, parity vs Kotlin, normalize invariants, Loco smoke</td></tr>
+          <tr><td><strong>Rust total</strong></td><td>&mdash;</td><td class="num"><strong>198</strong></td><td>&mdash;</td></tr>
+          <tr><td>Kotlin @Test</td><td><code>src/test/kotlin/...</code></td><td class="num">806</td><td>Original Kotlin pipeline: unit + template + integration (per README test table: 28+ classes covering parser, type mappers, template engine, full pipelines, cross-DB &times; cross-language matrix)</td></tr>
+        </tbody>
+      </table>
+
+      <h3 style="color:var(--cyan); font-family:'Orbitron',sans-serif; letter-spacing:1.5px; margin-top:1.2rem;">// RUST INTEGRATION TESTS</h3>
+      <table class="parity-table">
+        <thead><tr><th>File</th><th>What it pins</th></tr></thead>
+        <tbody>
+          <tr><td><code>tests/sample_ddls.rs</code></td><td>All 4 sample DDLs (chinook / northwind / pagila / sakila) round-trip cleanly through the Rust parser &rarr; codegen path for every target.</td></tr>
+          <tr><td><code>tests/parity_smoke.rs</code></td><td>Runs both pipelines (Kotlin via <code>./gradlew run</code>, Rust via <code>cargo run</code>) on the shared fixture set and diffs the output. The transition is "done" when this passes empty across the full sample corpus.</td></tr>
+          <tr><td><code>tests/normalize_units.rs</code></td><td>Property-style coverage of the snake_case &harr; PascalCase / camelCase transforms &mdash; the single hottest source of cross-language drift.</td></tr>
+          <tr><td><code>tests/loco_smoke.rs</code></td><td>The Rust-native target (<code>loco-gen</code>) end-to-end &mdash; no Kotlin analogue, so parity testing doesn't apply.</td></tr>
+        </tbody>
+      </table>
+
+      <h3 style="color:var(--cyan); font-family:'Orbitron',sans-serif; letter-spacing:1.5px; margin-top:1.2rem;">// KOTLIN TEST CATEGORIES</h3>
+      <p>Full per-class breakdown lives in <a href="https://github.com/MenkeTechnologies/api-rest-generator#-running-tests">README &ldquo;RUNNING TESTS&rdquo;</a>. Three tiers:</p>
+      <ul>
+        <li><strong>Unit</strong> &mdash; <code>MainTest</code>, <code>UtilTest</code>, <code>KotlinUtilTest</code>, <code>GroovyUtilTest</code>, <code>ColumnToFieldTest</code>, <code>EntityTest</code>, <code>EntityToRESTConstantsTest</code>, <code>EdgeCaseParsingTest</code>, <code>ConfigurationTest</code>, <code>KotlinConfigurationTest</code>, <code>GroovyConfigurationTest</code>: pinpoint per-fn coverage of parsers, type mappers, name transforms.</li>
+        <li><strong>Template</strong> &mdash; <code>TemplatesTest</code>, <code>KotlinTemplatesTest</code>, <code>GroovyTemplatesTest</code>, <code>KotlinEntityFieldDefaultsTest</code>, <code>GroovyEntityFieldsTest</code>, <code>RestRepositoryTemplateTest</code>: pin per-target template emission shape.</li>
+        <li><strong>Integration</strong> &mdash; <code>FullPipelineTest</code>, <code>PostgresqlPipelineTest</code>, <code>SqlitePipelineTest</code>, <code>MssqlPipelineTest</code>, <code>KotlinPipelineTest</code>, <code>GroovyPipelineTest</code>, <code>CustomSqlParsingTest</code>, <code>EmptyEntityListTest</code>, <code>KotlinContentValidationTest</code>, <code>GroovyContentValidationTest</code>, <code>CrossDatabaseLanguageTest</code>: end-to-end pipelines across the dialect &times; language matrix.</li>
+      </ul>
+
+      <hr class="section-rule">
+      <h2 class="tutorial-title"><span class="step-hash">#</span>CI POSTURE</h2>
+      <p class="tutorial-subtitle">api-rest-generator is in the meta-repo's <a href="https://github.com/MenkeTechnologies/MenkeTechnologiesMeta/blob/main/tests/rust-ci-polish-gates.sh">polish-gates allowlist</a> with all four gates opt-out for the Rust path: <code>fmt</code>, <code>clippy</code>, <code>doc</code>, <code>test</code>. The allowlist entry reads &ldquo;mid-transition from Kotlin to Rust &mdash; Rust code is still the secondary path. Treat as opt-out until the transition completes.&rdquo; The Kotlin path stays the source of truth; Rust ports land continuously without blocking on Rust-side polish until parity is established.</p>
+
+      <hr class="section-rule">
+      <h2 class="tutorial-title"><span class="step-hash">/</span>PROJECT METADATA</h2>
+      <table class="parity-table">
+        <thead><tr><th>Item</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>License</td><td>MIT</td></tr>
+          <tr><td>Author</td><td><a href="https://github.com/MenkeTechnologies">MenkeTechnologies</a></td></tr>
+          <tr><td>Repository</td><td><a href="https://github.com/MenkeTechnologies/api-rest-generator">github.com/MenkeTechnologies/api-rest-generator</a></td></tr>
+          <tr><td>Crate</td><td><a href="https://crates.io/crates/api-rest-generator">crates.io/crates/api-rest-generator</a></td></tr>
+          <tr><td>API docs</td><td><a href="https://docs.rs/api-rest-generator">docs.rs/api-rest-generator</a></td></tr>
+          <tr><td>Issues</td><td><a href="https://github.com/MenkeTechnologies/api-rest-generator/issues">github.com/MenkeTechnologies/api-rest-generator/issues</a></td></tr>
+          <tr><td>Edition</td><td>Rust 2021 (Cargo) &middot; Kotlin/JVM (Gradle)</td></tr>
+        </tbody>
+      </table>
+
+    </main>
+  </div>
+  <script src="hud-theme.js"></script>
+</body>
+</html>

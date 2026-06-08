@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="api-rest-generator — REST backend code generator from raw SQL DDL dumps. Targets Spring Boot (Java / Kotlin / Groovy) and Loco (Rust / Axum / SeaORM). Parses MySQL, PostgreSQL, SQLite, MSSQL DDL into typed Entity structs, then renders entities, controllers, DAOs, repositories, migrations, and module wiring per target.">
+  <title>api-rest-generator — Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&amp;family=Share+Tech+Mono&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="hud-static.css">
+  <link rel="stylesheet" href="tutorial.css">
+  <style>
+    .tutorial-main { max-width: 68rem; }
+    .docs-build-line {
+      margin: 0.35rem 0 0;
+      font-family: 'Share Tech Mono', ui-monospace, monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.03em;
+      max-width: 42rem;
+      opacity: 0.75;
+    }
+    .hub-scheme-strip {
+      border-bottom: 1px dashed var(--border);
+      background: color-mix(in srgb, var(--bg-secondary) 85%, transparent);
+      padding: 0.55rem 1.5rem 0.65rem;
+      position: relative;
+    }
+    .hub-scheme-strip-inner {
+      max-width: 68rem;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+    .hub-scheme-strip .hud-scheme-label {
+      flex: 0 0 auto;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      text-align: left;
+    }
+    .hub-scheme-strip .scheme-grid {
+      flex: 1 1 auto;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 6px;
+    }
+    @media (max-width: 720px) {
+      .hub-scheme-strip-inner { flex-direction: column; align-items: stretch; }
+      .hub-scheme-strip .scheme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.6rem 0 0.2rem;
+      font-size: 12px;
+    }
+    .matrix-table th {
+      background: var(--bg-secondary);
+      color: var(--cyan);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-align: left;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+    }
+    .matrix-table td {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      vertical-align: top;
+    }
+    .matrix-table td code { color: var(--accent-light); background: var(--bg); padding: 1px 4px; }
+    .matrix-table td.ok   { color: var(--green); font-weight: 700; }
+    .matrix-table td.part { color: var(--yellow); font-weight: 700; }
+    .matrix-table td.miss { color: var(--text-muted); }
+
+    .cat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+      gap: 0.6rem;
+      margin: 0.7rem 0;
+    }
+    .cat-card {
+      border: 1px solid var(--border);
+      border-left: 2px solid var(--cyan);
+      padding: 0.6rem 0.8rem;
+      background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+      border-radius: 2px;
+    }
+    .cat-card h4 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin: 0 0 0.35rem;
+    }
+    .cat-card p {
+      margin: 0;
+      font-size: 11.5px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+    .cat-card code { font-size: 11px; color: var(--accent-light); }
+  </style>
+</head>
+<body>
+  <div class="app tutorial-app" id="docsApp">
+    <div class="crt-scanline" id="crtH" aria-hidden="true"></div>
+    <div class="crt-scanline-v" id="crtV" aria-hidden="true"></div>
+
+    <header class="tutorial-header">
+      <div class="tutorial-header-inner">
+        <div>
+          <h1 class="tutorial-brand">// API-REST-GENERATOR &mdash; SCHEMA IN, BACKEND OUT</h1>
+          <nav class="tutorial-crumbs" aria-label="Breadcrumb">
+            <span class="current">Docs</span>
+            <span class="sep">/</span>
+            <a href="report.html">Engineering report</a>
+            <span class="sep">/</span>
+            <a href="https://github.com/MenkeTechnologies/api-rest-generator" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <span class="sep">/</span>
+            <a href="https://crates.io/crates/api-rest-generator" target="_blank" rel="noopener noreferrer">crates.io</a>
+            <span class="sep">/</span>
+            <a href="https://docs.rs/api-rest-generator" target="_blank" rel="noopener noreferrer">docs.rs</a>
+          </nav>
+          <p class="docs-build-line">api-rest-generator v0.2.0 &middot; Rust 2021 + clap + regex + once_cell &middot; 4 SQL dialects (MySQL / PostgreSQL / SQLite / MSSQL) &middot; 4 output targets (Java / Kotlin / Groovy Spring Boot + Rust/Loco Axum+SeaORM)</p>
+          <p class="docs-build-line">2 binaries (<code>api-rest-generator</code> multi-target + <code>loco-gen</code> Rust-only) &middot; mid-transition: original Kotlin/Gradle pipeline still ships alongside the Rust port (parity-tested)</p>
+        </div>
+        <div class="tutorial-toolbar">
+          <button type="button" class="btn btn-secondary" id="btnTheme" title="Toggle light/dark">Theme</button>
+          <button type="button" class="btn btn-secondary active" id="btnCrt" title="CRT scanline overlay">CRT</button>
+          <button type="button" class="btn btn-secondary active" id="btnNeon" title="Neon border pulse">Neon</button>
+          <a class="btn btn-secondary" href="report.html">Report</a>
+          <a class="btn btn-secondary" href="https://github.com/MenkeTechnologies/api-rest-generator" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a class="btn btn-secondary" href="https://github.com/MenkeTechnologies/api-rest-generator/issues" target="_blank" rel="noopener noreferrer">Issues</a>
+        </div>
+      </div>
+    </header>
+
+    <div class="hub-scheme-strip">
+      <div class="hub-scheme-strip-inner">
+        <span class="hud-scheme-label">// Color scheme</span>
+        <div class="scheme-grid" id="hudSchemeGrid"></div>
+      </div>
+    </div>
+
+    <main class="tutorial-main">
+      <h2 class="tutorial-title"><span class="step-hash">&gt;_</span>JACK INTO YOUR DATABASE. GENERATE THE BACKEND. OWN THE GRID.</h2>
+      <p class="tutorial-subtitle"><strong>api-rest-generator</strong> parses a raw <code>CREATE TABLE</code> dump from <strong>MySQL</strong>, <strong>PostgreSQL</strong>, <strong>SQLite</strong>, or <strong>Microsoft SQL Server</strong> and emits a fully wired REST backend in your stack of choice. Auto-detects primary keys, foreign keys, and column types; maps SQL types to language-native ones; generates entities, controllers, DAOs / repositories, migrations, and module wiring. Two binaries ship from one crate: <code>api-rest-generator</code> for the full multi-target dispatch (Spring Boot Java / Kotlin / Groovy plus Rust/Loco), and <code>loco-gen</code> when you only want the Rust path. You feed it SQL. It feeds you a backend. No boilerplate. No hand-wiring.</p>
+
+      <section class="tutorial-section">
+        <h2>Quickstart</h2>
+        <p>Install from crates.io or source:</p>
+<pre># install
+cargo install api-rest-generator
+
+# from source (Rust binaries)
+git clone https://github.com/MenkeTechnologies/api-rest-generator
+cd api-rest-generator
+cargo build --release
+# binaries land at target/release/api-rest-generator and target/release/loco-gen
+
+# original Kotlin/Gradle pipeline still runs in parallel for parity reference
+./gradlew build</pre>
+        <p>Point it at a <code>.sql</code> dump and a target language. The Rust binary uses positional + flag args; see <code>--help</code> for the full grammar.</p>
+<pre># JVM targets (Spring Boot — Java / Kotlin / Groovy)
+api-rest-generator --input samples/sakila-mysql.sql --language java   --out generated/
+api-rest-generator --input samples/sakila-mysql.sql --language kotlin --out generated/
+api-rest-generator --input samples/sakila-mysql.sql --language groovy --out generated/
+
+# Rust/Loco target — main binary
+api-rest-generator --input samples/pagila-postgresql.sql --language rust --out my-loco-app/
+
+# Rust/Loco target — focused binary (smaller flag surface, same engine)
+loco-gen --ddl samples/pagila-postgresql.sql --out my-loco-app/</pre>
+        <p>Full reference: <a href="https://github.com/MenkeTechnologies/api-rest-generator#readme">README</a> (section-by-section walkthrough of every CLI flag, type-mapping rule, and output convention per target).</p>
+      </section>
+
+      <section class="tutorial-section">
+        <h2>Input dialects &mdash; one card per parser path</h2>
+        <div class="cat-grid">
+          <div class="cat-card">
+            <h4>MySQL</h4>
+            <p>Standard <code>CREATE TABLE</code> grammar with backticked identifiers, inline <code>PRIMARY KEY</code> + table-level <code>FOREIGN KEY</code> constraints, MySQL-native types (<code>tinyint</code>, <code>bigint</code>, <code>varchar</code>, <code>datetime</code>, <code>timestamp</code>, <code>bit</code>).</p>
+          </div>
+          <div class="cat-card">
+            <h4>PostgreSQL</h4>
+            <p><code>pg_dump</code>-compatible: handles <code>CREATE TABLE</code> + post-table <code>ALTER TABLE ... ADD CONSTRAINT</code> for PK/FK, PG-specific types (<code>serial</code>, <code>text</code>, <code>boolean</code>, <code>numeric</code>, <code>real</code>, <code>integer</code>).</p>
+          </div>
+          <div class="cat-card">
+            <h4>SQLite</h4>
+            <p><code>.dump</code>-compatible: inline PKs, ignores <code>PRAGMA</code> / <code>BEGIN</code> / <code>INSERT</code> / <code>CREATE INDEX</code> noise, SQLite types (<code>INTEGER</code>, <code>TEXT</code>, <code>REAL</code>, <code>NUMERIC</code>, <code>BLOB</code>) with affinity rules.</p>
+          </div>
+          <div class="cat-card">
+            <h4>MSSQL (SQL Server)</h4>
+            <p>SSMS &ldquo;Generate Scripts&rdquo; output: <code>[bracket]</code> identifier stripping, ignored <code>SET</code> / <code>GO</code> control statements, MSSQL types (<code>nvarchar</code>, <code>uniqueidentifier</code>, <code>money</code>, <code>datetime2</code>).</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="tutorial-section">
+        <h2>Output targets &mdash; one card per backend</h2>
+        <div class="cat-grid">
+          <div class="cat-card">
+            <h4>Java &middot; Spring Boot + JPA</h4>
+            <p>Lombok-powered (<code>@Data</code>, <code>@AllArgsConstructor</code>, <code>@NoArgsConstructor</code>). JPA entities with <code>@Id</code>, <code>@ManyToOne</code>, <code>@JoinColumn</code>. <code>GenericDao</code> service layer + Spring Data JPA repositories. REST controllers covering GET / POST / PUT / DELETE.</p>
+          </div>
+          <div class="cat-card">
+            <h4>Kotlin &middot; Spring Boot + JPA</h4>
+            <p>Constructor injection, <code>var</code> properties with defaults, no Lombok. <code>val</code> / <code>var</code> distinguished by column nullability. Kotlin-native types (<code>Int</code> not <code>Integer</code>, <code>Boolean</code> not <code>String</code>). Same controller / DAO / repository surface as the Java target.</p>
+          </div>
+          <div class="cat-card">
+            <h4>Groovy &middot; Spring Boot + JPA</h4>
+            <p><code>@Canonical</code> annotation, field injection, no Lombok, no defaults. <code>@Autowired</code> wiring. Matches Java types but emits pure Groovy syntax.</p>
+          </div>
+          <div class="cat-card">
+            <h4>Rust &middot; Loco + Axum + SeaORM</h4>
+            <p>SeaORM entities (<code>#[derive(DeriveEntityModel)]</code>, <code>#[sea_orm(primary_key)]</code>). Axum-flavoured Loco controllers. Loco <code>create_table</code> migrations. Module aggregators wired into <code>src/models/_entities/mod.rs</code> and <code>src/controllers/mod.rs</code>. Raw-identifier escaping for Rust keywords (<code>r#type</code>).</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="tutorial-section">
+        <h2>4 &times; 4 matrix &mdash; every dialect feeds every target</h2>
+        <table class="matrix-table">
+          <thead>
+            <tr><th>Dialect &darr; / Target &rarr;</th><th>Java</th><th>Kotlin</th><th>Groovy</th><th>Rust/Loco</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>MySQL</td><td class="ok">OK</td><td class="ok">OK</td><td class="ok">OK</td><td class="ok">OK</td></tr>
+            <tr><td>PostgreSQL</td><td class="ok">OK</td><td class="ok">OK</td><td class="ok">OK</td><td class="ok">OK</td></tr>
+            <tr><td>SQLite</td><td class="ok">OK</td><td class="ok">OK</td><td class="ok">OK</td><td class="ok">OK</td></tr>
+            <tr><td>MSSQL</td><td class="ok">OK</td><td class="ok">OK</td><td class="ok">OK</td><td class="ok">OK</td></tr>
+          </tbody>
+        </table>
+        <p>16 dialect &times; target combinations, each exercised by the test suite. Sample DDLs ship in <code>samples/</code>: <code>chinook-sqlite.sql</code> (15,902 lines), <code>northwind-mssql.sql</code> (9,350), <code>pagila-postgresql.sql</code> (1,842), <code>sakila-mysql.sql</code> (644) &mdash; a 27,738-line aggregate corpus of real-world schemas.</p>
+      </section>
+
+      <section class="tutorial-section">
+        <h2>Type mapping &mdash; abridged</h2>
+        <p>Full per-dialect tables (every SQL type &rarr; every target type) live in the <a href="https://github.com/MenkeTechnologies/api-rest-generator#-type-mapping">README's TYPE MAPPING</a> section. A short read across the most common cases:</p>
+        <table class="matrix-table">
+          <thead>
+            <tr><th>SQL</th><th>Java</th><th>Kotlin</th><th>Groovy</th><th>Rust (SeaORM)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>int</code> / <code>integer</code></td><td><code>Integer</code></td><td><code>Int</code></td><td><code>Integer</code></td><td><code>i32</code></td></tr>
+            <tr><td><code>bigint</code></td><td><code>Long</code></td><td><code>Long</code></td><td><code>Long</code></td><td><code>i64</code></td></tr>
+            <tr><td><code>varchar</code> / <code>text</code></td><td><code>String</code></td><td><code>String</code></td><td><code>String</code></td><td><code>String</code></td></tr>
+            <tr><td><code>boolean</code> / <code>bit</code></td><td><code>Boolean</code></td><td><code>Boolean</code></td><td><code>Boolean</code></td><td><code>bool</code></td></tr>
+            <tr><td><code>datetime</code></td><td><code>LocalDate</code></td><td><code>LocalDate</code></td><td><code>LocalDate</code></td><td><code>DateTimeWithTimeZone</code></td></tr>
+            <tr><td><code>timestamp</code></td><td><code>LocalDateTime</code></td><td><code>LocalDateTime</code></td><td><code>LocalDateTime</code></td><td><code>DateTimeWithTimeZone</code></td></tr>
+            <tr><td><code>numeric</code> / <code>money</code></td><td><code>BigDecimal</code></td><td><code>BigDecimal</code></td><td><code>BigDecimal</code></td><td><code>Decimal</code></td></tr>
+            <tr><td><code>uuid</code> / <code>uniqueidentifier</code></td><td><code>UUID</code></td><td><code>UUID</code></td><td><code>UUID</code></td><td><code>Uuid</code></td></tr>
+          </tbody>
+        </table>
+        <p>snake_case tables &rarr; PascalCase entities; column names go camelCase on the JVM, snake_case on Rust. Rust-keyword columns are escaped as raw identifiers (<code>r#type</code>).</p>
+      </section>
+
+      <section class="tutorial-section">
+        <h2>Generated REST shape (per table)</h2>
+<pre>GET    /api/{entity}              # list
+GET    /api/{entity}/{id}         # detail
+POST   /api/{entity}              # create
+PUT    /api/{entity}/{id}         # update
+DELETE /api/{entity}/{id}         # delete</pre>
+        <p>Identical surface across all four targets. JPA repositories on the JVM expose Spring Data &mdash; pagination, sorting, projection &mdash; for free; the Loco target exposes the same shape through SeaORM entities + Axum routes.</p>
+      </section>
+
+      <section class="tutorial-section">
+        <h2>Architecture in one screen (Rust path)</h2>
+<pre>src/
+&#9500;&#9472;&#9472; bin/
+&#9474;   &#9500;&#9472;&#9472; main.rs              # api-rest-generator entrypoint &mdash; multi-target dispatch
+&#9474;   &#9492;&#9472;&#9472; loco_gen.rs          # loco-gen entrypoint &mdash; Rust-only path
+&#9500;&#9472;&#9472; lib.rs                   # public API surface
+&#9500;&#9472;&#9472; parser.rs                # DDL &rarr; Vec&lt;Entity&gt; (port of utils/Util.kt)
+&#9500;&#9472;&#9472; entity.rs                # Entity + ColumnToField structs (port of dto/*.kt)
+&#9500;&#9472;&#9472; normalize.rs             # name normalization (snake_case &harr; PascalCase / camelCase)
+&#9500;&#9472;&#9472; config.rs                # config-file loading + per-language defaults
+&#9500;&#9472;&#9472; constants.rs             # SQL-type &rarr; target-type maps (4 dialects &times; 4 targets)
+&#9500;&#9472;&#9472; globals.rs               # mutable global state (compat with original Kotlin shape)
+&#9500;&#9472;&#9472; templates.rs             # .tmpl loader + {{placeholder}} renderer (JVM targets)
+&#9492;&#9472;&#9472; loco.rs                  # Rust/Loco codegen &mdash; SeaORM entities, Axum controllers, migrations
+src/main/kotlin/com/jakobmenke/bootrestgenerator/   # original Kotlin/Gradle implementation
+&#9500;&#9472;&#9472; Main.kt
+&#9500;&#9472;&#9472; dto/                                 # Entity.kt + ColumnToField.kt
+&#9500;&#9472;&#9472; utils/                               # Util.kt + Configuration.kt + Globals.kt + EntityToRESTConstants.kt
+&#9492;&#9472;&#9472; templates/Templates.kt
+samples/
+&#9500;&#9472;&#9472; chinook-sqlite.sql        # 15,902 lines
+&#9500;&#9472;&#9472; northwind-mssql.sql       #  9,350 lines
+&#9500;&#9472;&#9472; pagila-postgresql.sql     #  1,842 lines
+&#9492;&#9472;&#9472; sakila-mysql.sql          #    644 lines
+tests/
+&#9500;&#9472;&#9472; loco_smoke.rs             # Rust/Loco target end-to-end
+&#9500;&#9472;&#9472; normalize_units.rs        # name-normalization invariants
+&#9500;&#9472;&#9472; parity_smoke.rs           # output matches original Kotlin pipeline on shared fixtures
+&#9492;&#9472;&#9472; sample_ddls.rs            # all 4 sample DDLs round-trip cleanly</pre>
+        <p>11 production <code>.rs</code> files (3,799 LOC counting the 2 bin/ entrypoints) currently shadow 17 main Kotlin files (9,094 LOC). The Kotlin path is the parity reference; the Rust port mirrors module-for-module to keep the diff readable during transition.</p>
+      </section>
+
+      <section class="tutorial-section">
+        <h2>License &amp; usage</h2>
+        <p>MIT licensed. Generated code is yours &mdash; no runtime dependency on api-rest-generator itself, just on the target framework you picked (Spring Boot for JVM targets, Loco / Axum / SeaORM for Rust).</p>
+      </section>
+
+    </main>
+  </div>
+  <script src="hud-theme.js"></script>
+</body>
+</html>

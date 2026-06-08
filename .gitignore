@@ -10,3 +10,8 @@ target/
 
 # Generator output (regenerated from DDL on every run)
 src/main/java/com/example/generated/
+
+# Override the global `docs/` ignore — docs/ here is the project's
+# GitHub Pages content (index.html, report.html, shared CSS/JS).
+!docs/
+!docs/*
