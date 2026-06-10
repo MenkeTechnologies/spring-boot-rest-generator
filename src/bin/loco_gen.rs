@@ -3,11 +3,8 @@
 //!
 //! Two subcommands:
 //!
-//! * `loco-gen new`      — runs `loco new`, generates entities + controllers
-//!                          + migrations from the DDL, wires `src/app.rs`,
-//!                          and (optionally) runs `cargo loco db migrate`.
-//! * `loco-gen generate` — emits the Loco file tree into an existing project
-//!                          directory (no scaffold, no wiring).
+//! * `loco-gen new` — runs `loco new`, generates entities + controllers + migrations from the DDL, wires `src/app.rs`, and (optionally) runs `cargo loco db migrate`.
+//! * `loco-gen generate` — emits the Loco file tree into an existing project directory (no scaffold, no wiring).
 //!
 //! Example:
 //! ```bash
@@ -188,27 +185,30 @@ fn run_new(args: NewArgs) -> std::io::Result<()> {
         .current_dir(&args.out)
         .status()
         .map_err(|e| {
-            std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!(
-                    "failed to invoke '{}': {e}. Install loco-cli with `cargo install loco`.",
-                    args.loco_bin
-                ),
-            )
+            std::io::Error::other(format!(
+                "failed to invoke '{}': {e}. Install loco-cli with `cargo install loco`.",
+                args.loco_bin
+            ))
         })?;
     if !status.success() {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!("`{} new` failed with status {status}", args.loco_bin),
-        ));
+        return Err(std::io::Error::other(format!(
+            "`{} new` failed with status {status}",
+            args.loco_bin
+        )));
     }
 
     eprintln!("[2/4] Parsing DDL: {}", args.ddl.display());
     let entities = parse_ddl(&args.ddl, args.db)?;
-    eprintln!("       Parsed {} entit{}.", entities.len(), plural(entities.len()));
+    eprintln!(
+        "       Parsed {} entit{}.",
+        entities.len(),
+        plural(entities.len())
+    );
 
-    eprintln!("[3/4] Writing Loco entities, controllers, migrations into {} ...",
-        project_root.display());
+    eprintln!(
+        "[3/4] Writing Loco entities, controllers, migrations into {} ...",
+        project_root.display()
+    );
     loco::write_loco_project(&entities, &project_root)?;
 
     if args.wire {
@@ -225,10 +225,9 @@ fn run_new(args: NewArgs) -> std::io::Result<()> {
             .current_dir(&project_root)
             .status()?;
         if !status.success() {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("`cargo loco db migrate` failed with status {status}"),
-            ));
+            return Err(std::io::Error::other(format!(
+                "`cargo loco db migrate` failed with status {status}"
+            )));
         }
     } else {
         eprintln!("[4/4] Skipping migrations (pass --migrate to run them).");
@@ -300,7 +299,10 @@ fn wire_app_routes(project_root: &Path, entities: &[Entity]) -> std::io::Result<
     if !app_rs.exists() {
         return Err(std::io::Error::new(
             std::io::ErrorKind::NotFound,
-            format!("expected {} to exist (was the project scaffolded with `loco new`?)", app_rs.display()),
+            format!(
+                "expected {} to exist (was the project scaffolded with `loco new`?)",
+                app_rs.display()
+            ),
         ));
     }
 
@@ -322,9 +324,7 @@ fn wire_app_routes(project_root: &Path, entities: &[Entity]) -> std::io::Result<
 
     // If a previous block exists, replace it; otherwise inject after
     // `AppRoutes::with_default_routes()`.
-    let patched = if let (Some(start), Some(after)) =
-        (original.find(begin), original.find(end))
-    {
+    let patched = if let (Some(start), Some(after)) = (original.find(begin), original.find(end)) {
         let mut s = String::with_capacity(original.len() + block.len());
         s.push_str(&original[..start]);
         s.push_str(&block);
@@ -365,8 +365,22 @@ fn print_summary(project_root: &Path, entities: &[Entity], wired: bool, migrated
     eprintln!("  Project:    {}", project_root.display());
     eprintln!("  Entities:   {}", entities.len());
     eprintln!("  Routes:     {} (5 per entity)", entities.len() * 5);
-    eprintln!("  Wired:      {}", if wired { "yes" } else { "no — see src/app_routes.rs" });
-    eprintln!("  Migrated:   {}", if migrated { "yes" } else { "no — run `cargo loco db migrate`" });
+    eprintln!(
+        "  Wired:      {}",
+        if wired {
+            "yes"
+        } else {
+            "no — see src/app_routes.rs"
+        }
+    );
+    eprintln!(
+        "  Migrated:   {}",
+        if migrated {
+            "yes"
+        } else {
+            "no — run `cargo loco db migrate`"
+        }
+    );
     eprintln!();
     eprintln!("Next:");
     eprintln!("  cd {}", project_root.display());
@@ -377,5 +391,9 @@ fn print_summary(project_root: &Path, entities: &[Entity], wired: bool, migrated
 }
 
 fn plural(n: usize) -> &'static str {
-    if n == 1 { "y" } else { "ies" }
+    if n == 1 {
+        "y"
+    } else {
+        "ies"
+    }
 }

@@ -122,96 +122,64 @@ fn render_entities_mod_emits_duplicate_mod_decls_for_colliding_table_names() {
     );
 }
 
-// ------------------------------------- write_loco_project silent overwrite
+// --- write_loco_project rejects snake-collision (was: silent overwrite) ---
 
 #[test]
-fn write_loco_project_silently_overwrites_on_table_name_collision() {
-    // The on-disk writer uses `fs::write` (truncate) per entity, so when
-    // two entities resolve to the same `<snake>.rs` file the SECOND
-    // entity wins and the first is lost without any error or warning.
-    //
-    // Concretely:
-    //   - First entity:  `User`  with pk `user_id`
-    //   - Second entity: `users` with pk `id`
-    //
-    // Both map to `src/models/_entities/users.rs`. After the call, the
-    // file on disk should match `users` (the second entity, with `id`
-    // as the PK column) — proving the first entity's content was lost.
+fn write_loco_project_rejects_snake_collision_with_named_error() {
+    // FIXED: pre-fix the writer used `fs::write` (truncate) per entity, so
+    // two entities resolving to the same `<snake>.rs` file silently
+    // overwrote each other and the merged `mod.rs` got a duplicate
+    // `pub mod users;` (Rust E0428). Now `write_loco_project` calls
+    // `check_no_snake_collision` upfront and returns an `io::Error` naming
+    // BOTH offending input table names so the caller can rename.
     let tmp = tempfile::tempdir().expect("tempdir");
     let root = tmp.path();
     let entities = vec![entity("User", "user_id"), entity("users", "id")];
-    let _ = loco::write_loco_project(&entities, root).expect("write_loco_project");
-
-    let entity_file = root.join("src/models/_entities/users.rs");
-    let contents = std::fs::read_to_string(&entity_file).unwrap_or_else(|e| {
-        panic!("expected {entity_file:?} to exist after write_loco_project: {e}")
-    });
-
-    // Second entity (`users`) declares its PK as `id`. The first entity
-    // (`User`) declared `user_id`. If the writer were collision-safe,
-    // we'd see BOTH PK field names; with the silent-overwrite bug, only
-    // the second wins.
+    let err = loco::write_loco_project(&entities, root)
+        .expect_err("write_loco_project must reject snake-colliding entities");
+    let msg = err.to_string();
     assert!(
-        contents.contains("pub id: i32"),
-        "expected the second entity's pk field `id` to survive overwrite, missing in:\n{contents}"
+        msg.contains("snake_table_for collision"),
+        "error must name the collision class; got: {msg}"
     );
     assert!(
-        !contents.contains("pub user_id: i32"),
-        "first entity's PK field `user_id` should have been overwritten; \
-         the writer silently dropped it — instead found:\n{contents}"
+        msg.contains("User") && msg.contains("users"),
+        "error must name BOTH colliding inputs so the caller knows which to rename; got: {msg}"
+    );
+    // And no file from the second entity should have been written —
+    // the failure happens BEFORE any fs::write call.
+    assert!(
+        !root.join("src/models/_entities/users.rs").exists(),
+        "no entity file should be written on collision-reject path"
     );
 }
 
-// ---------------------------------------- merge_mod_rs in-call duplicate bug
-
 #[test]
-fn write_loco_project_merge_mod_rs_emits_duplicate_lines_for_in_call_collision() {
-    // `merge_mod_rs` checks idempotency against the file's PRE-EXISTING
-    // content (`existing.lines()`) — never against the buffer it's
-    // currently appending to (`out`). So if two entities-to-write
-    // resolve to the same snake name within a single call, the line
-    // gets emitted twice. The resulting `mod.rs` will not compile.
-    //
-    // We trigger the bug with the same `User` / `users` pair used above.
-    let tmp = tempfile::tempdir().expect("tempdir");
-    let root = tmp.path();
-    let entities = vec![entity("User", "user_id"), entity("users", "id")];
-    let _ = loco::write_loco_project(&entities, root).expect("write_loco_project");
-
-    // Controllers `mod.rs` is created via `merge_mod_rs`. Read it back
-    // and count the `pub mod users;` lines.
-    let mod_path = root.join("src/controllers/mod.rs");
-    let mod_text = std::fs::read_to_string(&mod_path)
-        .unwrap_or_else(|e| panic!("expected {mod_path:?} after write_loco_project: {e}"));
-    let count = mod_text.matches("pub mod users;").count();
-    assert_eq!(
-        count, 2,
-        "merge_mod_rs should emit `pub mod users;` twice when two entities collide in one call; \
-         got count={count}, full file:\n{mod_text}"
-    );
-}
-
-// ----------------------------------------- merge_mod_rs duplicate-entity bug
-
-#[test]
-fn write_loco_project_merge_mod_rs_emits_duplicate_lines_for_literal_duplicate_entities() {
-    // Literal duplicate entities (same `table_name` twice) trigger the
-    // same in-call duplicate emission — pin it separately so a fix that
-    // adds dedup to ONE path (collision) but not the other (literal dup)
-    // is caught.
+fn write_loco_project_rejects_literal_duplicate_entities() {
+    // Literal duplicate entities (same `table_name` twice) trigger the same
+    // collision class; verify they're rejected by the same code path so a
+    // future fix that dedups only the snake-normalized case but not literal
+    // duplicates is caught.
     let tmp = tempfile::tempdir().expect("tempdir");
     let root = tmp.path();
     let e = entity("users", "id");
     let entities = vec![e.clone(), e];
-    let _ = loco::write_loco_project(&entities, root).expect("write_loco_project");
-
-    let mod_path = root.join("src/controllers/mod.rs");
-    let mod_text = std::fs::read_to_string(&mod_path)
-        .unwrap_or_else(|e| panic!("expected {mod_path:?} after write_loco_project: {e}"));
-    let count = mod_text.matches("pub mod users;").count();
-    assert_eq!(
-        count, 2,
-        "merge_mod_rs duplicates `pub mod users;` for literal-duplicate entities; \
-         got count={count}, full file:\n{mod_text}"
+    let err = loco::write_loco_project(&entities, root)
+        .expect_err("write_loco_project must reject literal-duplicate entities");
+    let msg = err.to_string();
+    assert!(
+        msg.contains("snake_table_for collision"),
+        "error must name the collision class; got: {msg}"
     );
+}
+
+#[test]
+fn write_loco_project_accepts_collision_free_entities() {
+    // Sanity: the collision check must NOT false-positive on normal input.
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let root = tmp.path();
+    let entities = vec![entity("users", "id"), entity("orders", "id")];
+    loco::write_loco_project(&entities, root).expect("collision-free input must succeed");
+    assert!(root.join("src/models/_entities/users.rs").exists());
+    assert!(root.join("src/models/_entities/orders.rs").exists());
 }

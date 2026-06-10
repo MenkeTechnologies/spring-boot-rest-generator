@@ -482,15 +482,20 @@ mod tests {
         build_kotlin_entity_fields(&mut sb, &e);
         let id_pos = sb.find("@Id").expect("@Id present");
         let col_pos = sb.find("@Column").expect("@Column present");
-        assert!(id_pos < col_pos, "@Id must precede @Column in Kotlin output");
+        assert!(
+            id_pos < col_pos,
+            "@Id must precede @Column in Kotlin output"
+        );
     }
 
     // ---------------------------------------- cross-language shape pins
 
+    type EntityFieldRenderer = fn(&mut String, &Entity);
+
     #[test]
     fn all_three_renderers_indent_with_four_spaces() {
         let e = entity_with(vec![col("name", "String", None, "name")]);
-        let renderers: [(&str, fn(&mut String, &Entity)); 3] = [
+        let renderers: [(&str, EntityFieldRenderer); 3] = [
             ("java", build_java_entity_fields),
             ("groovy", build_groovy_entity_fields),
             ("kotlin", build_kotlin_entity_fields),
@@ -511,7 +516,7 @@ mod tests {
             col("a", "String", None, "a"),
             col("b", "String", None, "b"),
         ]);
-        let renderers: [(&str, fn(&mut String, &Entity)); 3] = [
+        let renderers: [(&str, EntityFieldRenderer); 3] = [
             ("java", build_java_entity_fields),
             ("groovy", build_groovy_entity_fields),
             ("kotlin", build_kotlin_entity_fields),
