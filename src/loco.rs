@@ -217,18 +217,49 @@ fn field_name(col: &ColumnToField) -> String {
     escape_rust_keyword(&raw)
 }
 
+/// Database column name for emission into SQL string literals (migration
+/// `(\"col\", ColType::*)` rows). Snake-cases the DDL-source name (so
+/// `ACTIVITY_ID` → `activity_id` matches the Rust field name) but does NOT
+/// route through `escape_rust_keyword` — that's only correct for Rust
+/// identifier positions. Pre-fix this used `field_name(col)` which produced
+/// `r#type` / `type_field` for reserved-word columns and corrupted the
+/// migration's CREATE TABLE statement.
+fn raw_db_column_name(col: &ColumnToField) -> String {
+    if let Some(name) = &col.database_column_name {
+        to_snake_case(name)
+    } else if let Some(name) = &col.camel_case_field_name {
+        to_snake_case(name)
+    } else {
+        "_unknown".to_string()
+    }
+}
+
 /// Wrap reserved Rust keywords in `r#` so they can be used as identifiers.
+///
+/// `self`, `Self`, `crate`, `super` are explicitly disallowed as raw
+/// identifiers by the Rust language reference, so columns literally named
+/// one of those four must be suffixed (`_field`) instead of `r#`-wrapped.
+/// `union` and `dyn` are also context-sensitive — they're contextual keywords
+/// and don't need escaping in field-name position, but the escape is
+/// harmless so we keep them.
 fn escape_rust_keyword(s: &str) -> String {
-    const RESERVED: &[&str] = &[
-        "as", "break", "const", "continue", "crate", "else", "enum", "extern", "false", "fn",
-        "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub", "ref",
-        "return", "self", "Self", "static", "struct", "super", "trait", "true", "type", "unsafe",
-        "use", "where", "while", "async", "await", "dyn", "abstract", "become", "box", "do",
-        "final", "macro", "override", "priv", "typeof", "unsized", "virtual", "yield", "try",
-        "union",
+    // Reserved + can be raw-identified: wrap in `r#`.
+    const RESERVED_RAW_OK: &[&str] = &[
+        "as", "break", "const", "continue", "else", "enum", "extern", "false", "fn", "for", "if",
+        "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub", "ref", "return",
+        "static", "struct", "trait", "true", "type", "unsafe", "use", "where", "while", "async",
+        "await", "dyn", "abstract", "become", "box", "do", "final", "macro", "override", "priv",
+        "typeof", "unsized", "virtual", "yield", "try", "union",
     ];
-    if RESERVED.contains(&s) {
+    // Reserved + NOT allowed as raw idents per the Rust reference: suffix
+    // with `_field` instead of `r#`. A column literally named `self` etc.
+    // would otherwise generate code that fails to compile (`pub r#self: …`
+    // — rejected by the parser).
+    const RESERVED_NEEDS_SUFFIX: &[&str] = &["self", "Self", "crate", "super"];
+    if RESERVED_RAW_OK.contains(&s) {
         format!("r#{s}")
+    } else if RESERVED_NEEDS_SUFFIX.contains(&s) {
+        format!("{s}_field")
     } else {
         s.to_string()
     }
@@ -397,7 +428,16 @@ pub fn render_migration(entity: &Entity) -> String {
     let cols = {
         let mut s = String::new();
         for col in effective_columns(entity).iter() {
-            let name = field_name(col);
+            // Pre-fix this used `field_name(col)` which routes through
+            // `escape_rust_keyword` and produces `r#type` / `type_field` for
+            // reserved-word column names. That string then landed in a SQL
+            // column-name STRING LITERAL — the DB column was literally
+            // created with the escaped name, and SeaORM later couldn't match
+            // the Rust-side `type` field to the DB-side `r#type` column.
+            // The migration must emit the RAW database column name (with the
+            // original case if the source DDL preserved it). Rust-identifier
+            // escaping is correct only for Rust-identifier positions.
+            let name = raw_db_column_name(col);
             let ct = loco_col_type_for(col);
             s.push_str(&format!("            (\"{name}\", ColType::{ct}),\n"));
         }

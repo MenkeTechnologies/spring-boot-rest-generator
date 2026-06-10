@@ -192,27 +192,19 @@ fn render_controller_escapes_reserved_keyword_in_params_struct_and_setters() {
 
 #[test]
 fn render_migration_emits_unescaped_column_name_string_literal() {
-    // The migration emits column names as STRING LITERALS, e.g.
-    // `("type", ColType::String)`. Inside a string literal the `r#`
-    // prefix would be wrong — Loco's `create_table` matches the
-    // actual SQL column name, which is `type` (no Rust escape).
-    // Pin that the migration does NOT leak the `r#` prefix into the
-    // string literal even though `field_name` itself returns
-    // `r#type` for this column.
+    // FIXED: migration column names are now emitted via `raw_db_column_name`
+    // which snake-cases but does NOT route through `escape_rust_keyword`.
+    // The CREATE TABLE statement now correctly uses `"type"` matching the
+    // actual SQL column name. Pre-fix the literal was `"r#type"` and the
+    // database column was created with that Rust-escape leakage.
     let e = entity_with("events", vec![pk("id"), col("type", Some("varchar(64)"))]);
     let mig = render_migration(&e);
-    // Current behaviour (which is also the bug): the migration calls
-    // `field_name(col)` and interpolates the result into the string
-    // literal verbatim, producing `("r#type", ColType::String)`.
-    // That changes the column name from `type` to `r#type` in the
-    // generated SQL CREATE TABLE — so user-facing data lands in a
-    // column named `r#type` instead of `type`. Pin the current
-    // behaviour so the fix (split escape from snake-case at the
-    // string-literal boundary) breaks this test loudly and forces
-    // a deliberate update.
     assert!(
-        mig.contains("(\"r#type\", ColType::String)"),
-        "expected current (buggy) behaviour: r#type leaks into migration \
-         string literal; got:\n{mig}"
+        mig.contains("(\"type\", ColType::String)"),
+        "migration must emit unescaped `type` string literal; got:\n{mig}"
+    );
+    assert!(
+        !mig.contains("r#type"),
+        "migration must NOT leak `r#type` Rust escape into SQL string literal; got:\n{mig}"
     );
 }
