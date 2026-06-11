@@ -1,15 +1,15 @@
-.\" spring-boot-rest-generatorall(1) — comprehensive all-in-one man page
+.\" api-rest-generatorall(1) — comprehensive all-in-one man page
 .\" Modeled after zshall(1): every reference section in one document.
-.\" Render with:  man -l man/man1/spring-boot-rest-generatorall.1
-.\" Install:      cp man/man1/spring-boot-rest-generatorall.1 /usr/local/share/man/man1/
-.TH SPRING-BOOT-REST-GENERATORALL 1 "May 2026" "spring-boot-rest-generator 0.2.0" "User Commands"
+.\" Render with:  man -l man/man1/api-rest-generatorall.1
+.\" Install:      cp man/man1/api-rest-generatorall.1 /usr/local/share/man/man1/
+.TH API-REST-GENERATORALL 1 "May 2026" "api-rest-generator 0.2.0" "User Commands"
 .SH NAME
-spring-boot-rest-generatorall \- the spring-boot-rest-generator comprehensive
+api-rest-generatorall \- the api-rest-generator comprehensive
 reference (architecture, configuration, DDL dialects, type mapping,
 template grammar, port discipline)
 .SH OVERVIEW
 This is the all-in-one
-.B spring-boot-rest-generator
+.B api-rest-generator
 manual, modeled on
 .BR zshall (1).
 It concatenates every section so you can grep with `/`:
@@ -48,7 +48,7 @@ It concatenates every section so you can grep with `/`:
 
 .SH 1. WHAT IT DOES
 Feed
-.B spring-boot-rest-generator
+.B api-rest-generator
 a raw SQL DDL dump (\fIpg_dump\fR / \fImysqldump\fR / SQLite
 .B .dump
 / SSMS Generate Scripts) and it emits a fully wired Spring Boot REST
@@ -163,7 +163,7 @@ DDL file relative to
 .SH 4. DDL DIALECT NORMALISATION
 Each dialect runs a per-DB pre-pass before the main parser sees the
 tokens. See
-.BR spring-boot-rest-generator (1)
+.BR api-rest-generator (1)
 for the per-dialect feature matrix. Implementation lives in
 .B src/normalize.rs:
 .RS 4
@@ -371,11 +371,11 @@ Run with:
 
 .SH 11. EXAMPLES
 See
-.BR spring-boot-rest-generator (1)
+.BR api-rest-generator (1)
 for invocation examples.
 
 .SH 12. SEE ALSO
-.BR spring-boot-rest-generator (1),
+.BR api-rest-generator (1),
 .BR pg_dump (1),
 .BR mysqldump (1),
 .BR sqlite3 (1)

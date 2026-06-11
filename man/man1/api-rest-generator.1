@@ -1,12 +1,12 @@
-.\" Manpage for spring-boot-rest-generator.
-.\" Contact https://github.com/MenkeTechnologies/spring-boot-rest-generator to correct errors.
-.TH SPRING-BOOT-REST-GENERATOR 1 "2026-05-29" "spring-boot-rest-generator 0.2.0" "User Commands"
+.\" Manpage for api-rest-generator.
+.\" Contact https://github.com/MenkeTechnologies/api-rest-generator to correct errors.
+.TH API-REST-GENERATOR 1 "2026-05-29" "api-rest-generator 0.2.0" "User Commands"
 .SH NAME
-spring-boot-rest-generator \- generate a Spring Boot REST API (entities, controllers, DAOs, repositories) from a SQL DDL dump
+api-rest-generator \- generate a Spring Boot REST API (entities, controllers, DAOs, repositories) from a SQL DDL dump
 .SH SYNOPSIS
-.B spring-boot-rest-generator
+.B api-rest-generator
 .SH DESCRIPTION
-.B spring-boot-rest-generator
+.B api-rest-generator
 parses a raw MySQL, PostgreSQL, SQLite, or MSSQL DDL dump and emits a
 fully wired Spring Boot REST API \(em JPA entities (\fI@Id\fR,
 \fI@ManyToOne\fR, \fI@JoinColumn\fR), REST controllers (GET / POST / PUT /
@@ -27,7 +27,7 @@ The binary takes no command-line arguments. Configure via
 then run:
 .PP
 .RS 4
-.B spring-boot-rest-generator
+.B api-rest-generator
 .RE
 .SH CONFIGURATION
 .B src/main/resources/config.properties
@@ -149,7 +149,7 @@ file.name=mysql_dump.sql
 target.language=java
 database.type=mysql
 EOF
-$ spring-boot-rest-generator
+$ api-rest-generator
 Generated 18 entities under build/generated//com/example/generated
 .fi
 .RE
@@ -160,7 +160,7 @@ Switch to PostgreSQL + Kotlin:
 .nf
 $ sed -i 's/mysql/postgresql/; s/mysql_dump.sql/pg_dump.sql/; s/java/kotlin/' \\
     src/main/resources/config.properties
-$ spring-boot-rest-generator
+$ api-rest-generator
 .fi
 .RE
 .SH FILES
@@ -185,11 +185,11 @@ Generation succeeded.
 Config file missing, DDL file missing, template missing, or I/O failure
 writing output.
 .SH SEE ALSO
-.BR spring-boot-rest-generatorall (1)
+.BR api-rest-generatorall (1)
 
 .SH AUTHOR
 MenkeTechnologies <https://github.com/MenkeTechnologies>
 
 .SH BUGS
 Report at
-.RB \(aq https://github.com/MenkeTechnologies/spring-boot-rest-generator/issues \(aq.
+.RB \(aq https://github.com/MenkeTechnologies/api-rest-generator/issues \(aq.

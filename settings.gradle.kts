@@ -1,1 +1,1 @@
-rootProject.name = "spring-boot-rest-generator"
+rootProject.name = "api-rest-generator"
