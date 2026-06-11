@@ -44,7 +44,7 @@ No boilerplate. No hand-wiring. Just schema in, API out.
 [x] Generate Spring Data JPA repositories (JVM targets)
 [x] Generate Loco controllers + migrations + module aggregators (Rust target)
 [x] Output in Java, Kotlin, Groovy, **or Rust/Loco**
-[x] Map MySQL types --> Java/Kotlin/Groovy/Rust types (varchar->String, bigint->Long/i64, datetime->LocalDateTime/DateTimeWithTimeZone, ...)
+[x] Map MySQL types --> Java/Kotlin/Groovy/Rust types (varchar->String, bigint->Long/i64, datetime->LocalDate/DateTimeWithTimeZone, ...)
 [x] Map PostgreSQL types --> Java/Kotlin/Groovy/Rust types (integer, text, boolean, serial, numeric, real, ...)
 [x] Map SQLite types --> Java/Kotlin/Groovy/Rust types (INTEGER, TEXT, REAL, NUMERIC, BLOB, ...)
 [x] Map MSSQL types --> Java/Kotlin/Groovy/Rust types (nvarchar, uniqueidentifier, money, datetime2, ...)
@@ -111,6 +111,12 @@ For MSSQL, use SSMS "Generate Scripts" or `sqlcmd` to export the schema.
 
 Or run `Main.kt` from your IDE. Watch the grid light up.
 
+`./gradlew run` covers the JVM output languages (`java` / `kotlin` / `groovy`). For `target.language=rust-loco`, run the Rust generator binary instead — it reads the same `config.properties`:
+
+```bash
+cargo run --bin api-rest-generator
+```
+
 ---
 
 ## `> OUTPUT MATRIX`
@@ -153,7 +159,7 @@ The directory tree below applies to the JVM targets (`java`/`kotlin`/`groovy`). 
 | bigint type          | Long                          | Long                           | Long                           | i64                             |
 | bit/boolean type     | String                        | Boolean                        | String                         | bool                            |
 | FK type              | Integer                       | Int                            | Integer                        | i32                             |
-| datetime / timestamp | LocalDateTime                 | LocalDateTime                  | LocalDateTime                  | DateTimeWithTimeZone (SeaORM)   |
+| datetime / timestamp | LocalDate / LocalDateTime     | LocalDate / LocalDateTime      | LocalDate / LocalDateTime      | DateTimeWithTimeZone (SeaORM)   |
 
 ---
 
@@ -475,6 +481,20 @@ src/main/resources/templates/
  |-- *.tmpl                              Java templates (default)
  |-- kotlin/*.tmpl                       Kotlin templates
  \-- groovy/*.tmpl                       Groovy templates
+
+src/                                     Rust crate (port of the Kotlin generator + Loco target)
+ |-- lib.rs                              Crate root
+ |-- config.rs                           config.properties reader
+ |-- constants.rs                        Regex patterns & constants
+ |-- entity.rs                           Entity / column models
+ |-- globals.rs                          Global state holder
+ |-- normalize.rs                        PG/SQLite/MSSQL normalizers
+ |-- parser.rs                           Tokenizer & CREATE/ALTER TABLE parser
+ |-- templates.rs                        JVM template engine
+ |-- loco.rs                             Loco/SeaORM emitter
+ \-- bin/
+      |-- main.rs                        api-rest-generator binary (config-driven)
+      \-- loco_gen.rs                    loco-gen CLI (clap)
 ```
 
 ---
@@ -482,7 +502,8 @@ src/main/resources/templates/
 ## `> RUNNING TESTS`
 
 ```bash
-./gradlew test
+./gradlew test    # JVM suite (parser, type mappers, templates, pipelines)
+cargo test        # Rust suite (parser/normalizer parity, Loco emitter, sample DDLs)
 ```
 
 ### Test Suite Overview
@@ -528,6 +549,7 @@ Unit, template, and integration tests cover the parser, type mappers, template e
 Java       |   ✓    |     ✓      |   ✓    |   ✓    |
 Kotlin     |   ✓    |     ✓      |   ✓    |   ✓    |
 Groovy     |   ✓    |     ✓      |   ✓    |   ✓    |
+Rust/Loco  |   ✓    |     ✓      |   ✓    |   ✓    |
            +--------+------------+--------+--------+
 ```
 
