@@ -311,7 +311,14 @@ pub fn parse_words(words: &[String]) -> Vec<Entity> {
                 paren_depth = 0;
             } else if matches!(
                 next_word.to_ascii_uppercase().as_str(),
-                "VIEW" | "FUNCTION" | "TRIGGER" | "PROCEDURE" | "INDEX" | "EVENT" | "SCHEMA" | "DATABASE"
+                "VIEW"
+                    | "FUNCTION"
+                    | "TRIGGER"
+                    | "PROCEDURE"
+                    | "INDEX"
+                    | "EVENT"
+                    | "SCHEMA"
+                    | "DATABASE"
             ) {
                 in_table = false;
             }
@@ -404,8 +411,15 @@ mod tests {
     //! Private-helper pins. These functions are not part of the public API
     //! but they shape every rendered entity field name and PascalCase class
     //! name, so a regression here would corrupt generated source silently.
-    //! All five are pure (no `Globals` dependency) so they can be exercised
-    //! without the `GLOBALS_LOCK` synchronisation used in `parity_smoke.rs`.
+    //! The name-shaping helpers (`trim_punct`, `first_letter_to_caps`,
+    //! `camel_name`, `entity_name_from_table`, `camelize_column`) are pure
+    //! (no `Globals` dependency) so they can be exercised without the
+    //! `GLOBALS_LOCK` synchronisation used in `parity_smoke.rs`.
+    //!
+    //! `java_type_for` does read `Globals::is_kotlin()`, but the cases pinned
+    //! below are restricted to DDL types whose mapping is identical in both
+    //! Java and Kotlin targets, so those pins stay deterministic regardless
+    //! of any concurrent `Globals` mutation in sibling unit tests.
 
     use super::*;
 
@@ -543,10 +557,7 @@ mod tests {
 
     #[test]
     fn entity_name_from_table_three_segments() {
-        assert_eq!(
-            entity_name_from_table("foo_bar_baz"),
-            "FooBarBaz"
-        );
+        assert_eq!(entity_name_from_table("foo_bar_baz"), "FooBarBaz");
     }
 
     #[test]
@@ -608,5 +619,56 @@ mod tests {
         // Internal pipeline produces PascalCase then lowers the first
         // char — pin that the LAST segment retains its capital.
         assert_eq!(camelize_column("foo_bar_baz", "`"), "fooBarBaz");
+    }
+
+    // ------------------------------------------------------- java_type_for
+    //
+    // `java_type_for` is an ORDERED regex cascade: several patterns overlap
+    // on the same input, and the FIRST match wins. The per-pattern tests in
+    // `constants.rs` prove each regex matches its family in isolation, but
+    // they cannot catch a cascade-ordering regression — the bug class where
+    // a broader pattern is consulted before the narrower one it shadows and
+    // silently steals the mapping. These pins lock the resolution of every
+    // known overlap so reordering the cascade fails a test instead of
+    // shipping wrong JVM types into generated entities.
+
+    #[test]
+    fn java_type_for_datetime2_resolves_to_local_date_time_not_local_date() {
+        // `DATETIME_PATTERN`'s char class also matches `datetime2`
+        // (see constants::datetime_pattern_accidentally_matches_datetime2…),
+        // and DATETIME alone maps to `LocalDate`. The MSSQL_DATETIME2 branch
+        // is consulted FIRST and must win, yielding `LocalDateTime`. If the
+        // two branches are reordered, `datetime2` silently downgrades to a
+        // date-only type and drops the time-of-day component.
+        assert_eq!(java_type_for("datetime2"), "LocalDateTime");
+        // Bare `datetime` keeps the date-only mapping.
+        assert_eq!(java_type_for("datetime"), "LocalDate");
+    }
+
+    #[test]
+    fn java_type_for_bigint_resolves_to_long_not_integer() {
+        // `bigint` must reach the PG_BIGINT/BIGINT branches (→ Long) before
+        // any INT branch (→ Integer). INT_PATTERN itself rejects `bigint`
+        // (constants::int_pattern_rejects_smallint_and_bigint), so the only
+        // correct outcome is Long; pin it so a cascade or regex change that
+        // let `int` swallow `bigint` would 32-bit-truncate a 64-bit column.
+        assert_eq!(java_type_for("bigint"), "Long");
+        assert_eq!(java_type_for("bigserial"), "Long");
+    }
+
+    #[test]
+    fn java_type_for_time_family_stays_distinct_across_overlap() {
+        // `time`, `timestamp`, and `datetime` share a "time"-ish prefix but
+        // map to three different JVM types. Pin all three plus the unknown
+        // fallback in one shot so a single broadened regex that collapsed
+        // them onto one type is caught.
+        assert_eq!(java_type_for("time"), "LocalTime");
+        assert_eq!(java_type_for("timestamp"), "LocalDateTime");
+        // varchar(255) carries a size suffix — the VARCHAR branch must still
+        // match and win at the very top of the cascade.
+        assert_eq!(java_type_for("varchar(255)"), "String");
+        // Anything unrecognised falls through to the String default rather
+        // than panicking or returning an empty type.
+        assert_eq!(java_type_for("geometry"), "String");
     }
 }
